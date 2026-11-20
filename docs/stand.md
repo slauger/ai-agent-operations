@@ -15,6 +15,7 @@ Stand: 20.11.2026.
 | Zwei Workflows teilen Zustand | Chat-Workflow liest das Gedächtnis des täglichen Laufs |
 | Chat-Assistent ohne Werkzeuge | eigener Kanal, jede Nachricht, Antwort im Thread |
 | Egress-Proxy | Squid ohne root mit Pod Security `restricted`: erlaubte Domain geht, andere Domain, Cluster-Dienst, Service-IP, Metadaten-Adresse und falscher Port werden verweigert |
+| Egress-Proxy im laufenden Agenten | je ein Squid in beiden Agenten-Namespaces; aus dem Namespace erreichbar: nur die erlaubten Domains |
 | Proxy-Variablen für Kommando-Schritte | `executor.proxy` in der Binding setzt `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`; Runner-API immer ausgenommen |
 
 ## Was nicht gezeigt ist
@@ -22,28 +23,29 @@ Stand: 20.11.2026.
 | Fähigkeit | Warum nicht |
 | --- | --- |
 | NetworkPolicies wirksam | lokaler Cluster (Docker Desktop) setzt sie nicht durch; braucht k3s |
-| Egress-Proxy im laufenden Agenten | Chart fertig und getestet, Ausrollen wartet auf die Veröffentlichung des Charts |
 | Freigaben, Rückfragen mitten im Lauf | nicht gebaut; Laufzeit lehnt solche Manifeste ab |
 | MCP-Werkzeuge | nicht gebaut |
 | Monatsbudget, Meldung bei Fehlschlag, Metriken | nicht gebaut |
 | Lokaler Modus ohne Kubernetes | nicht gebaut |
 | Eigener Agenten-Cluster | bewusst noch lokal |
 
-## Bekannte Schwachstellen im PoC
+## Schwachstellen aus der Prüfung
 
-Aus der Sicherheitsprüfung ([Prüfprotokoll](pruefung.md)); sie betreffen den Code, nicht nur das Konzept:
+Aus der Sicherheitsprüfung ([Prüfprotokoll](pruefung.md)); sie betrafen den Code, nicht nur das Konzept. Stand nach den Korrekturen vom 20.11.2026:
 
-| Schwachstelle | Wo | Schwere |
-| --- | --- | --- |
-| `web.fetch` prüft keine privaten Ziele, und ohne `network`-Block ist jeder Host erlaubt (SSRF aus dem Operator) | Operator, Tool-Proxy | hoch |
-| Wer Läufe anlegen darf, kann `manual` oder `schedule` wählen und so `suspend` und Filter umgehen | Operator, Lauf-Prüfung | hoch |
-| Der Chat-Workflow schreibt Wünsche aus dem Gespräch in den Zustand, den der tägliche Lauf befolgt | Konzert-Scout | hoch |
-| Plattform-Werte (Egress-Modus, Squid-Optionen) stehen in der Werte-Datei des Agenten; ApplicationSet im Projekt `default` | Agenten-Repository | hoch |
-| Modell-Schlüssel liegt im Namespace jedes Agenten | Charts, Operator | mittel |
-| Antwort wird ungefiltert gepostet; Ziel-URL des Chats kommt aus einem Input | Runtime-Image, Antwort-Skript | mittel |
-| Modell-Proxy reicht Anfragen fast unverändert durch | Operator | mittel |
-| ServiceAccounts der Sensoren können zwischen Agenten kollidieren | Charts | mittel |
-| Chat-Agent im Modus `none` kann mit wirksamen Policies nicht antworten | Chart `mattermost-chat` | mittel |
+| Schwachstelle | Wo | Schwere | Stand |
+| --- | --- | --- | --- |
+| `web.fetch` ohne Schutz vor privaten Zielen, ohne `allowHosts` jeder Host erlaubt (SSRF aus dem Operator) | Operator | hoch | behoben: nur Hosts aus `allowHosts`, private Ziele nach der Namensauflösung verweigert, auch bei Weiterleitungen |
+| Läufe mit beliebigem Auslöser-Typ, `suspend` und Filter umgehbar | Operator | hoch | behoben: Admission-Regel (Zeitplan-Läufe nur der Operator, Sensoren nur Ereignis-Läufe), Zeitplan-Läufe müssen einen Zeitplan-Auslöser nennen |
+| Chat schreibt Freitext-Wünsche in den Zustand, den der tägliche Lauf befolgt | Konzert-Scout | hoch | teilweise: nur noch typisierte, geprüfte Einträge; eine Bestätigung im Chat fehlt |
+| Plattform-Werte in der Werte-Datei des Agenten, ApplicationSet im Projekt `default` | Agenten-Repository | hoch | behoben: Richtlinien-Prüfung in der CI, CODEOWNERS, AppProject `agents` |
+| Modell-Proxy reicht Anfragen fast unverändert durch | Operator | mittel | behoben: Positivliste der Felder, keine serverseitigen Werkzeuge, keine Beta-Header, kein Streaming |
+| Antwort ungefiltert gepostet, Ziel-URL aus einem Input | Antwort-Skripte | mittel | behoben: Bereinigung vor dem Posten, feste `https`-Adresse im Manifest |
+| Chat-Agent im Modus `none` kann mit wirksamen Policies nicht antworten | Chart `mattermost-chat` | mittel | behoben: eigener Squid mit dem Chat-Host als einziger Domain |
+| ServiceAccounts der Sensoren können zwischen Agenten kollidieren | Charts | mittel | behoben: Agent als Präfix, Eindeutigkeit in der CI geprüft |
+| Modell-Schlüssel liegt im Namespace jedes Agenten | Charts, Operator | mittel | offen |
+| Ticket im Pod für Kommandos lesbar | Runner | niedrig | offen |
+| keine Tages- oder Monatsgrenze für Kosten | Operator | mittel | offen |
 
 ## Komponenten und Repositories
 

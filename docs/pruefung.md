@@ -12,7 +12,7 @@ Der erste Entwurf wurde am 20.11.2026 dreimal unabhängig geprüft, jeweils ohne
 
 | Befund | Prüfung | Ergebnis |
 | --- | --- | --- |
-| Der Tool-Proxy des Operators ist eine zweite Tür ins Internet ohne Schutz vor privaten Zielen (SSRF) | 1, 2 | neuer Abschnitt in [08](08-isolation-und-netzwerk.md#der-operator-als-zweite-tür), Härtung des Operators in [14](14-sicherheit.md#härtung-des-operators); Code-Fehler in [Stand](stand.md#bekannte-schwachstellen-im-poc) |
+| Der Tool-Proxy des Operators ist eine zweite Tür ins Internet ohne Schutz vor privaten Zielen (SSRF) | 1, 2 | neuer Abschnitt in [08](08-isolation-und-netzwerk.md#der-operator-als-zweite-tür), Härtung des Operators in [14](14-sicherheit.md#härtung-des-operators); Code-Fehler in [Stand](stand.md#schwachstellen-aus-der-prüfung) |
 | Filter und Auslöser-Typ eines Laufs werden nicht durchgesetzt; Zeitplan-Läufe kann jeder anlegen, der Läufe anlegen darf | 1 | korrigiert in [04](04-laufzeit.md#lebenslauf-eines-laufs) und [06](06-ereignisse.md#filtern-auf-zwei-ebenen); Admission-Regel geplant |
 | Der Chat-Workflow schreibt in den Zustand: Gedächtnis kann vergiftet werden | 1 | korrigiert in [11](11-zustand-und-kontext.md), neue Bedrohung in [14](14-sicherheit.md), E24 |
 | Ebene 3 (Plattform) wird in der Werte-Datei des Agenten geschrieben | 1, 2 | Abschnitt "Durchsetzung heute" in [02](02-drei-ebenen.md#durchsetzung-heute); AppProject, Richtlinien-Prüfung, CODEOWNERS geplant |

@@ -65,7 +65,7 @@ Jeder Workflow besteht aus Schritten, und es gibt genau zwei Arten. Ein **Agente
 | Chat-Brücke | Chat-Nachrichten als CloudEvents auf MQTT | im PoC neben dem Operator, endgültig offen (O10) | umgesetzt |
 | MQTT-Broker | interner Ereignis-Bus mit ACLs | Infrastruktur-Cluster | umgesetzt |
 | Argo Events | EventSource (MQTT), EventBus, ein Sensor pro Workflow | Agenten-Cluster, Namespace `agent-events` | umgesetzt |
-| Egress-Proxy | Squid pro Agent, Allowlist von Domains | Namespace des Agenten | umgesetzt (Chart), Ausrollen geplant |
+| Egress-Proxy | Squid pro Agent, Allowlist von Domains | Namespace des Agenten | umgesetzt |
 | Runtime-Image | generisches Image für Kommando-Schritte (Python, jq, Antwort-Skript) | Registry | umgesetzt |
 | Freigaben, Rückfragen im Lauf | Knöpfe im Chat, Lauf wartet | Operator plus Brücke | geplant |
 | MCP-Werkzeuge | Werkzeugquellen über den Tool-Proxy | Operator | geplant |

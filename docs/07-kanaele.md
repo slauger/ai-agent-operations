@@ -45,7 +45,7 @@ Wie kommt die Antwort an die richtige Stelle? Das Ereignis bringt die Korrelatio
 
 Diese Lösung hält das Manifest ehrlich: Es sieht, dass ein Schritt nach außen schreibt, und es braucht dafür ein Secret.
 
-Zwei Regeln für den Antwort-Schritt (beide offen):
+Zwei Regeln für den Antwort-Schritt (beide umgesetzt):
 
 - **Ziel fest, nicht aus Eingaben.** Die Adresse des Chats kommt aus der Binding, nur `https://`, nicht aus einem Input; sonst könnte ein Lauf den Token an ein fremdes Ziel schicken.
 - **Antwort bereinigen.** Die Antwort des Modells wird vor dem Posten bereinigt: keine Bilder (ein Bild mit Daten in der URL wird vom Client geladen), Links nur zu erlaubten Hosts, keine Massen-Erwähnungen wie `@all`.

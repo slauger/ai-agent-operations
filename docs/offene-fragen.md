@@ -10,7 +10,6 @@
 | O08 | Wohin gehen Pod-Logs, Audit-Ereignisse und Proxy-Protokolle, und wie lange bleiben sie? | zentrale Protokollierung mit Frist | Datenschutz |
 | O09 | Wie kommen Secrets in den Agenten-Cluster? | External Secrets aus einem Tresor, Sealed Secrets | Topologie |
 | O10 | Wo läuft die Brücke? | nahe am Chat oder bei den Agenten | Topologie |
-| O11 | Wie erreicht ein Chat-Agent den Chat für seine Antwort, wenn die Policies wirken? | Egress-Proxy im Anwendungs-Chart mit dem Chat-Host als einziger Domain (bevorzugt), CIDR-Allowlist | Agenten-Cluster |
 | O13 | Wie wird der Zustand vor versehentlichem Löschen geschützt? | PVC aus dem Prune ausnehmen, `Retain`, Löschen nur mit Freigabe | Datensicherung |
 | O14 | Wie wird der Operator hochverfügbar, obwohl er auch Datenweg (Runner-API, Proxys) ist? | mehrere Replikas mit Wahl eines Leiters für die Steuerung und Proxy in allen Replikas; oder Proxy als eigener Dienst | Last |
 | O15 | Soll eine einzelne Ereignisquelle über Broker und EventBus laufen oder direkt an eine Webhook-EventSource? | Bus ab der zweiten Quelle, direkt für den Anfang | Zahl der Quellen |
@@ -20,4 +19,5 @@ Geschlossen:
 
 - **O03** (wie Ereignisdaten in den Lauf kommen): in AWP entschieden (D7, AEP-0004): eigene Wurzel `${{ event.* }}`, keine Abbildung auf Inputs. Die Laufzeit folgt (E22).
 - **O04** (Webhook-Eingang): Argo Events (E07).
+- **O11** (Chat-Agent ohne Weg zum Chat): das Anwendungs-Chart bringt einen Squid mit dem Chat-Host als einziger Domain mit.
 - **O12** (Images festlegen): im AWP-Entwurf geregelt (G40): Tags werden beim Start auf den Digest aufgelöst und festgehalten, unter dem Sicherheitsprofil ist ein Digest Pflicht.

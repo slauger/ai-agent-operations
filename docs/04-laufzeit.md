@@ -40,7 +40,7 @@ stateDiagram-v2
 
 Beim Start prüft der Operator:
 
-- **Auslöser:** Ein Lauf mit `trigger.type: event` braucht einen Ereignis-Auslöser im Manifest an dem Index in `triggers`, den der Lauf nennt, mit gleicher `source` und gleichem `eventType`, sonst `TriggerNotAllowed`. Den `filter` prüft der Operator nicht, weil er die Ereignisdaten nicht kennt. Wer Läufe anlegen darf, kann heute auch den Typ `manual` oder `schedule` wählen; eine Admission-Regel, nach der nur der Operator Zeitplan-Läufe und Sensoren nur Ereignis-Läufe anlegen, ist geplant.
+- **Auslöser:** Ein Lauf mit `trigger.type: event` braucht einen Ereignis-Auslöser im Manifest an dem Index in `triggers`, den der Lauf nennt, mit gleicher `source` und gleichem `eventType`, sonst `TriggerNotAllowed`. Den `filter` prüft der Operator nicht, weil er die Ereignisdaten nicht kennt. Eine Admission-Regel legt fest, wer welchen Typ anlegen darf: Zeitplan-Läufe nur der Operator, die Sensoren in `agent-events` nur Ereignis-Läufe (umgesetzt). Manuelle Läufe brauchen einen manuellen Auslöser im Manifest oder gar keinen Auslöser.
 - **Duplikate:** siehe [Kapitel 06](06-ereignisse.md#zustellung-und-duplikate).
 - **Festhalten:** Der Lauf speichert eine Kopie des Manifests mit Digest. Ein GitOps-Sync mitten im Lauf ändert nichts mehr.
 

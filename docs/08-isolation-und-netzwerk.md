@@ -59,8 +59,8 @@ Agenten-Schritte erreichen nur den Operator. Dessen Tool-Proxy ruft aber eingeba
 
 | Regel | Stand |
 | --- | --- |
-| nur Hosts aus `allowHosts` des Manifests | teilweise: ohne `network`-Block erlaubt die Laufzeit heute jeden Host |
-| private, Loopback-, Link-Local- und CGNAT-Ziele nach der Namensauflösung verweigern | offen |
+| nur Hosts aus `allowHosts` des Manifests; ohne `allowHosts` kein Abruf | umgesetzt |
+| private, Loopback-, Link-Local- und CGNAT-Ziele nach der Namensauflösung verweigern, auch bei Weiterleitungen | umgesetzt (Schalter für Tests, standardmäßig aus) |
 | eigene NetworkPolicy für den Operator | offen |
 | Protokoll pro Lauf mit Ziel | teilweise (Audit-Ereignis pro Aufruf) |
 
@@ -68,7 +68,7 @@ Langfristig gehört der Abruf fremder Inhalte nicht in die am stärksten berecht
 
 ## Egress-Proxy pro Agent
 
-NetworkPolicies kennen nur IP-Adressen, keine Hostnamen. Wer "nur `www.example.org`" erlauben will, braucht einen Proxy, der den Namen sieht. Dafür bekommt jeder Agent im Modus `proxy` einen eigenen Squid in seinem Namespace (Chart fertig und getestet, Ausrollen geplant):
+NetworkPolicies kennen nur IP-Adressen, keine Hostnamen. Wer "nur `www.example.org`" erlauben will, braucht einen Proxy, der den Namen sieht. Dafür bekommt jeder Agent im Modus `proxy` einen eigenen Squid in seinem Namespace (umgesetzt, im PoC für beide Agenten):
 
 - **Allowlist von Domains**, Ports 80 und 443, CONNECT nur auf 443. Alles andere: verboten. Die Schreibweise `.example.org` (Domain samt Subdomains) ist Squid-Syntax; AWP legt für `allowHosts` noch keine Syntax fest.
 - **Keine privaten Ziele:** Ziele, die auf private, Loopback-, Link-Local- (Cloud-Metadaten) oder CGNAT-Adressen auflösen, verweigert Squid, auch wenn die Domain erlaubt ist. Zusätzlich schließt die NetworkPolicy des Proxys diese Netze aus.
@@ -92,6 +92,6 @@ NetworkPolicies wirken nur mit einer CNI, die sie durchsetzt. k3s bringt das mit
 
 ## Woher die Allowlist kommt
 
-Heute stehen Modus und Domains in der `values.yaml` des Agenten, also im selben Pull Request wie das Manifest. Die Plattform ist damit nur so weit Obergrenze, wie der Review sie schützt ([Kapitel 02](02-drei-ebenen.md#durchsetzung-heute)).
+Heute stehen Modus und Domains in der `values.yaml` des Agenten, also im selben Pull Request wie das Manifest. Was die Werte darüber hinaus nicht dürfen, prüft die CI ([Kapitel 02](02-drei-ebenen.md#durchsetzung-heute)).
 
 Ziel: Das Manifest nennt seine Ziele in `permissions.network` (`egress: deny`, `allowHosts`), die Laufzeit leitet daraus die Allowlist des Squids ab und schneidet sie mit einer Obergrenze des Betreibers. Ist die Obergrenze enger als das Manifest verlangt, wird der Workflow abgelehnt, statt still beschnitten zu laufen (G47, O02).

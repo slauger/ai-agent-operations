@@ -60,7 +60,7 @@ flowchart LR
 
 Im PoC dauert es vom Push bis zum laufenden Agenten rund 20 Sekunden (mit Refresh), das Entfernen genauso.
 
-Das ApplicationSet nutzt im PoC das Argo-CD-Projekt `default`. Geplant ist ein AppProject, das nur die Namespaces `agent-*` und `agent-events` und nur die Ressourcen der Charts erlaubt; sonst könnte ein Chart beliebige Objekte im Cluster anlegen.
+Das ApplicationSet läuft im Argo-CD-Projekt `agents`, das nur die Namespaces `agent-*` und nur die Objektarten der Charts erlaubt; ein Chart kann so keine beliebigen Objekte im Cluster anlegen (umgesetzt).
 
 ## Charts
 
@@ -68,7 +68,7 @@ Das ApplicationSet nutzt im PoC das Argo-CD-Projekt `default`. Geplant ist ein A
 | --- | --- | --- |
 | `agent-lib` | Bibliothek | Vorlagen: Namespace mit Pod Security `restricted`, NetworkPolicy `agent-egress`, WorkflowBinding, Sensor mit ServiceAccount und RBAC |
 | `agent` | generisch | ein oder mehrere Workflows (`workflows:` in den Werten), je Workflow Binding und optional Sensor; Egress-Proxy als Abhängigkeit |
-| `mattermost-chat` | Anwendungsfall | Chat-Agent: berechnet Filter aus Kanal, Modus (Kanal oder Erwähnung), Bot-Name und erlaubten Benutzern; bindet den Bot-Token. Braucht noch den Egress-Proxy mit dem Chat-Host als einziger Domain (offen, O11) |
+| `mattermost-chat` | Anwendungsfall | Chat-Agent: berechnet Filter aus Kanal, Modus (Kanal oder Erwähnung), Bot-Name und erlaubten Benutzern; bindet den Bot-Token. Bringt einen eigenen Egress-Proxy mit dem Chat-Host als einziger Domain mit |
 
 Die Bibliothek enthält, was für alle gleich ist; Anwendungs-Charts übersetzen fachliche Werte ("antworte in Kanal X, nur Benutzer Y") in Filter und Bindings. Wer einen neuen Typ von Agent häufiger braucht, baut ein weiteres Anwendungs-Chart auf der Bibliothek.
 

@@ -53,9 +53,7 @@ Die Regeln sind das Ziel; der PoC setzt sie nur teilweise durch:
 | --- | --- |
 | Manifest ohne Laufzeit-Begriffe | umgesetzt (CI prüft `metadata.namespace`), bis auf `secrets[].source: kubernetes` |
 | Sensor filtert nur enger als das Manifest | offen: niemand prüft es, und die Laufzeit sieht die Ereignisdaten nicht |
-| Plattform als Obergrenze | offen: Egress-Modus, Domains und Squid-Optionen stehen in der `values.yaml` des Agenten, also im selben Pull Request wie das Manifest |
-
-Damit die dritte Ebene wirklich dem Betreiber gehört, sind geplant: ein Argo-CD-AppProject pro Agent mit erlaubten Namespaces und Ressourcen, eine Richtlinien-Prüfung der Werte in der CI (keine eigenen Squid-Regeln, kein `0.0.0.0/0`, nur freigegebene Images) und CODEOWNERS für die Plattform-Schlüssel der Werte.
+| Plattform als Obergrenze | teilweise: Egress-Modus und Domains stehen in der `values.yaml` des Agenten. Eine Richtlinien-Prüfung in der CI erlaubt dort nur `egress.mode`, `proxy.enabled` und `proxy.allowedDomains` (keine Squid-Regeln, keine breiten Netze, kein Runner-Image, kein Modell-Zugang), CODEOWNERS verlangt den Review des Betreibers, und ein Argo-CD-AppProject erlaubt nur `agent-*`-Namespaces und die Objektarten der Charts (umgesetzt). Eine Obergrenze für Domains außerhalb des Agenten-Verzeichnisses fehlt noch (O02) |
 
 ## Warum nicht alles ins Manifest
 
