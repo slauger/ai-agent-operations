@@ -1,0 +1,91 @@
+# Website des Konzepts (MkDocs Material). Bauen mit `make docs`, ansehen mit `make docs-serve`.
+# Der Build ist streng: kaputte Links und Seiten ohne Eintrag in nav brechen ab.
+site_name: KI-Agenten betreiben
+site_description: Referenzkonzept für den Betrieb von KI-Agenten auf Kubernetes, mit offenem Workflow-Format, GitOps, Ereignissen und Chat
+repo_url: https://github.com/slauger/ai-agent-operations
+edit_uri: edit/main/docs/
+docs_dir: docs
+strict: true
+
+validation:
+  omitted_files: warn
+  absolute_links: ignore
+  unrecognized_links: warn
+  anchors: warn
+
+theme:
+  name: material
+  language: de
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Dunkler Modus
+    - scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Heller Modus
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search:
+      lang: de
+
+markdown_extensions:
+  - tables
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+
+nav:
+  - Start: index.md
+  - Grundlagen:
+      - 00 Ziel und Leitlinien: 00-ziel-und-leitlinien.md
+      - 01 Architektur im Überblick: 01-architektur.md
+      - 02 Drei Ebenen der Konfiguration: 02-drei-ebenen.md
+  - Bausteine:
+      - 03 Workflow-Manifest (AWP): 03-workflow-manifest.md
+      - 04 Laufzeit: 04-laufzeit.md
+      - 05 Bereitstellung mit GitOps: 05-bereitstellung.md
+      - 06 Ereignisse und Auslöser: 06-ereignisse.md
+      - 07 Kanäle und Chat: 07-kanaele.md
+      - 08 Isolation und Netzwerk: 08-isolation-und-netzwerk.md
+      - 09 Secrets und Identitäten: 09-secrets-und-identitaeten.md
+      - 10 Modelle, Budgets und Kosten: 10-modelle-und-kosten.md
+      - 11 Zustand und Kontext: 11-zustand-und-kontext.md
+      - 12 Beobachtung und Audit: 12-beobachtung.md
+  - Betrieb:
+      - 13 Cluster-Topologie: 13-cluster-topologie.md
+      - 14 Sicherheit und Bedrohungen: 14-sicherheit.md
+      - 15 Betrieb und Pflege: 15-betrieb.md
+      - 16 Ohne Kubernetes: 16-ohne-kubernetes.md
+  - Beispiele:
+      - Konzert-Scout: beispiel-konzert-scout.md
+      - Chat-Assistent: beispiel-assistent.md
+      - Einen neuen Agenten anlegen: neuer-agent.md
+  - Entscheidungen und Abgleich:
+      - Entscheidungen: entscheidungen.md
+      - Abgleich mit AWP: awp-abgleich.md
+      - Offene Fragen: offene-fragen.md
+      - Stand des Proof of Concept: stand.md
+  - Glossar: glossar.md

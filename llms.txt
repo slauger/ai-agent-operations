@@ -1,0 +1,41 @@
+# ai-agent-operations
+
+> Referenzkonzept für den Betrieb von KI-Agenten auf Kubernetes: offenes Workflow-Format (AWP), Laufzeit mit Modell- und Tool-Proxy, GitOps mit einem Verzeichnis pro Agent, Ereignisse über MQTT und Argo Events, Chat als Oberfläche, Namespace und Egress-Proxy pro Agent. Sprache: Deutsch.
+
+## Grundlagen
+
+- [Übersicht](docs/index.md)
+- [00 Ziel und Leitlinien](docs/00-ziel-und-leitlinien.md)
+- [01 Architektur im Überblick](docs/01-architektur.md)
+- [02 Drei Ebenen der Konfiguration](docs/02-drei-ebenen.md)
+
+## Bausteine
+
+- [03 Workflow-Manifest](docs/03-workflow-manifest.md)
+- [04 Laufzeit](docs/04-laufzeit.md)
+- [05 Bereitstellung mit GitOps](docs/05-bereitstellung.md)
+- [06 Ereignisse und Auslöser](docs/06-ereignisse.md)
+- [07 Kanäle und Chat](docs/07-kanaele.md)
+- [08 Isolation und Netzwerk](docs/08-isolation-und-netzwerk.md)
+- [09 Secrets und Identitäten](docs/09-secrets-und-identitaeten.md)
+- [10 Modelle, Budgets und Kosten](docs/10-modelle-und-kosten.md)
+- [11 Zustand und Kontext](docs/11-zustand-und-kontext.md)
+- [12 Beobachtung und Audit](docs/12-beobachtung.md)
+
+## Betrieb
+
+- [13 Cluster-Topologie](docs/13-cluster-topologie.md)
+- [14 Sicherheit und Bedrohungen](docs/14-sicherheit.md)
+- [15 Betrieb und Pflege](docs/15-betrieb.md)
+- [16 Ohne Kubernetes](docs/16-ohne-kubernetes.md)
+
+## Beispiele und Abgleich
+
+- [Konzert-Scout](docs/beispiel-konzert-scout.md)
+- [Chat-Assistent](docs/beispiel-assistent.md)
+- [Neuer Agent](docs/neuer-agent.md)
+- [Entscheidungen](docs/entscheidungen.md)
+- [Abgleich mit AWP](docs/awp-abgleich.md)
+- [Offene Fragen](docs/offene-fragen.md)
+- [Stand](docs/stand.md)
+- [Glossar](docs/glossar.md)
