@@ -59,16 +59,16 @@ Stand des Abgleichs: 20.11.2026, gegen AWP `v1alpha2` auf dem Branch der Überar
 
 ## Neue Punkte für die Spezifikation
 
-Aus dem PoC, noch nicht in der Lückenliste (ohne Nummer, Formulierung zur Übernahme):
+Aus dem PoC und den Prüfungen, am 20.11.2026 als G48 bis G58 in die Lückenliste aufgenommen:
 
-1. **Läufe von einem vertrauenswürdigen Router.** Ein vorhandener Router (Argo Events, Tekton Triggers) ist weder Client (manuell) noch Laufzeit. Vorschlag: eine Rolle "trusted ingress", die Läufe mit Auslöser `event` und mitgegebenem Ereignis anlegen darf; die Laufzeit prüft den Auslöser gegen das Manifest und hält die Identität fest.
-2. **Syntax von `allowHosts`.** Subdomains, Ports, IP-Adressen und CIDRs sind nicht festgelegt; Allowlists sind nicht zwischen Laufzeiten übertragbar.
-3. **Private Ziele.** Ein erlaubter Host kann auf private, Loopback-, Link-Local- oder CGNAT-Adressen auflösen. Unter dem Sicherheitsprofil sollen Laufzeiten solche Ziele verweigern, außer sie sind ausdrücklich als Adresse erlaubt (SSRF, DNS-Rebinding).
-4. **Egress-Proxy als Durchsetzung.** Informativ: ein Proxy pro Arbeitslast mit Allowlist aus `allowHosts` plus eine Policy, die nur diesen Proxy erlaubt, setzt `permissions.network` für Kommando-Schritte konform um. Eine Laufzeit, die eine Netzregel nicht durchsetzen kann, lehnt den Workflow ab. Ergänzt G10 und G47.
-5. **Trigger-Objekte als Erweiterungspunkt.** Wie Bindings, aber für Auslöser: `targetRefs` mit Index des Auslösers, darf nur enger filtern, Status `Accepted`; erzeugt oder geprüft von der Laufzeit.
-6. **Geteilter Zustand.** Zwei Workflows eines Besitzers teilen Zustand (einer schreibt, einer liest). `spec.state` als benannte Ressource mit Zugriffsart, Regeln für gleichzeitiges Schreiben, strengste Datenklasse gilt für alle. Ergänzt G03.
-7. **Bedeutung von `source`.** CloudEvents meint den Erzeuger (URI), AEP-0021 B4 einen Adapter-Namen. Festlegen.
-8. **Identität nach außen.** Ein Workflow, der als eigenes Bot-Konto schreibt, handelt unter einer fremden Identität; das Manifest zeigt nur ein Secret. Mit Tool-Schritten (AEP-0012) die Identität deklarierbar machen.
-9. **Zustellgarantie.** Laufzeiten nennen pro Ereignisquelle die Garantie (höchstens einmal, mindestens einmal) im Konformitäts-Statement; Router können sie still herabsetzen (MQTT QoS 0).
-10. **Ereignisgesteuerte Workflows testen.** Nach AEP-0004 scheitert `event.*` außerhalb von Ereignis-Läufen, und von außen angelegte Läufe sind manuell. Vorschlag: Testlauf mit mitgegebenem Ereignis, als Wiederholung markiert, geprüft gegen `dataSchema`.
-11. **Zustand als nicht vertrauenswürdige Eingabe.** Was ein Lauf in den Zustand schreibt, liest der nächste als Daten; über Chat oder Webseiten kann so eine Anweisung dauerhaft werden. Herkunftsmarke (G11) auch für Zustand.
+1. **Läufe von einem vertrauenswürdigen Router (G48).** Ein vorhandener Router (Argo Events, Tekton Triggers) ist weder Client (manuell) noch Laufzeit. Vorschlag: eine Rolle "trusted ingress", die Läufe mit Auslöser `event` und mitgegebenem Ereignis anlegen darf; die Laufzeit prüft den Auslöser gegen das Manifest und hält die Identität fest.
+2. **Syntax von `allowHosts` (G49).** Subdomains, Ports, IP-Adressen und CIDRs sind nicht festgelegt; Allowlists sind nicht zwischen Laufzeiten übertragbar.
+3. **Private Ziele (G50).** Ein erlaubter Host kann auf private, Loopback-, Link-Local- oder CGNAT-Adressen auflösen. Unter dem Sicherheitsprofil sollen Laufzeiten solche Ziele verweigern, außer sie sind ausdrücklich als Adresse erlaubt (SSRF, DNS-Rebinding).
+4. **Egress-Proxy als Durchsetzung (G51).** Informativ: ein Proxy pro Arbeitslast mit Allowlist aus `allowHosts` plus eine Policy, die nur diesen Proxy erlaubt, setzt `permissions.network` für Kommando-Schritte konform um. Eine Laufzeit, die eine Netzregel nicht durchsetzen kann, lehnt den Workflow ab. Ergänzt G10 und G47.
+5. **Trigger-Objekte als Erweiterungspunkt (G52).** Wie Bindings, aber für Auslöser: `targetRefs` mit Index des Auslösers, darf nur enger filtern, Status `Accepted`; erzeugt oder geprüft von der Laufzeit.
+6. **Geteilter Zustand (G53).** Zwei Workflows eines Besitzers teilen Zustand (einer schreibt, einer liest). `spec.state` als benannte Ressource mit Zugriffsart, Regeln für gleichzeitiges Schreiben, strengste Datenklasse gilt für alle. Ergänzt G03.
+7. **Bedeutung von `source` (G54).** CloudEvents meint den Erzeuger (URI), AEP-0021 B4 einen Adapter-Namen. Festlegen.
+8. **Identität nach außen (G55).** Ein Workflow, der als eigenes Bot-Konto schreibt, handelt unter einer fremden Identität; das Manifest zeigt nur ein Secret. Mit Tool-Schritten (AEP-0012) die Identität deklarierbar machen.
+9. **Zustellgarantie (G56).** Laufzeiten nennen pro Ereignisquelle die Garantie (höchstens einmal, mindestens einmal) im Konformitäts-Statement; Router können sie still herabsetzen (MQTT QoS 0).
+10. **Ereignisgesteuerte Workflows testen (G57).** Nach AEP-0004 scheitert `event.*` außerhalb von Ereignis-Läufen, und von außen angelegte Läufe sind manuell. Vorschlag: Testlauf mit mitgegebenem Ereignis, als Wiederholung markiert, geprüft gegen `dataSchema`.
+11. **Zustand als nicht vertrauenswürdige Eingabe (G58).** Was ein Lauf in den Zustand schreibt, liest der nächste als Daten; über Chat oder Webseiten kann so eine Anweisung dauerhaft werden. Herkunftsmarke (G11) auch für Zustand.
