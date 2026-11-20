@@ -39,7 +39,7 @@ Stand des Abgleichs: 20.11.2026, gegen AWP `v1alpha2` auf dem Branch der Überar
 | G41 | Ereignisdaten im Lauf | teilweise: D7 entschieden, AEP-0004 nicht angewendet | PoC bildet auf Inputs ab, Zielform `${{ event.* }}` (E22) |
 | G42 | Filter-Semantik | offen | Filter im Manifest nur beschreibend |
 | G43 | Duplikate, Parallelität | offen; agentable-Verhalten als Vorlage | Duplikaterkennung umgesetzt, Parallelität fehlt |
-| G44 | Akteur eines Ereignis-Laufs | offen und widersprüchlich (5.2: `system`, 10.8: wer anlegt) | bezeugter Mensch nur in Daten |
+| G44 | Akteur eines Ereignis-Laufs | offen: 5.2 setzt für jeden Ereignis-Start den Akteur `system`, ein bezeugter Mensch kommt nicht vor | bezeugter Mensch nur in Daten |
 | G45 | Rückweg | offen | Zustellung als Kommando-Schritt |
 | G46 | Gesprächs-Kontext | offen; Teilnehmer sind personenbezogene Daten | Brücke liefert den Thread |
 | G47 | `permissions.network` und Grenzen der Plattform | offen (7.5.1: ohne Block `egress: allow`) | `network` in jedem Manifest (E23) |
@@ -52,7 +52,7 @@ Stand des Abgleichs: 20.11.2026, gegen AWP `v1alpha2` auf dem Branch der Überar
 | Sensor legt Läufe mit `spec.trigger.type: event` an | von außen angelegte Läufe sind manuell, Auslöser nur im Status | Laufzeit legt Ereignis-Läufe selbst an (E22) |
 | Ereignisfelder als Inputs | D7: keine Abbildung auf Inputs | `${{ event.* }}` mit `dataSchema` (AEP-0004) |
 | Filterschlüssel `data.user` | Bedeutung offen, AEP-0004 spricht von `event.data.*` | angleichen, wenn G42 entschieden ist |
-| Mensch als Auslöser | Akteur `system` oder wer anlegt | bis G44 nur in Daten |
+| Mensch als Auslöser | Akteur `system` (5.2) | bis G44 nur in Daten |
 | Sensor als Trigger-Objekt | AEP-0021 B6 kennt nur Bindings eigener Arten | Trigger-Objekte als neuer Punkt |
 | Squid-Schreibweise `.example.org`, CIDR-Modus | `allowHosts` ohne Syntax | als agentable-spezifisch kennzeichnen |
 | Variable `AWP_STATE_DIR` | Präfix `AWP_` ist reserviert (5.6.4) | umbenennen |
