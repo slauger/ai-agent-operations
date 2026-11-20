@@ -31,6 +31,21 @@ flowchart LR
 
 Grundsatz: **Das Modell bekommt nie ein Geheimnis.** Ein Agenten-Schritt formuliert, ein Kommando-Schritt mit festem Code nutzt den Token. Selbst eine erfolgreiche Prompt-Injection kann den Token nicht ausgeben, weil er im Prozess des Agenten nicht existiert.
 
+## Kurzlebige Zugänge statt Schlüssel
+
+Ein Schritt-Pod bekommt nie den Schlüssel des Modell-Anbieters, sondern ein Ticket (umgesetzt):
+
+| Eigenschaft | Umsetzung |
+| --- | --- |
+| gebunden an genau einen Versuch | Namespace, Lauf, Schritt und Versuchsnummer im Ticket, vom Operator signiert |
+| läuft von selbst ab | Ablaufzeit gleich Schritt-Timeout plus kurzer Puffer |
+| wird mit dem Schritt ungültig | der Operator prüft bei jedem Aufruf, ob genau dieser Versuch noch läuft; danach weist er das Ticket ab |
+| erlaubt nur, was das Manifest erlaubt | Modell, Werkzeuge und Budget des Schritts; jeder Aufruf im Audit |
+
+Wer einen laufenden Pod übernimmt, kann also höchstens das tun, was der Schritt ohnehin darf, und nur bis der Schritt endet. Offen sind zwei Verbesserungen: Das Ticket ist ein Bearer-Token, das ein Kommando im selben Pod lesen kann (Bindung an die Pod-Adresse nach dem ersten Abruf), und der echte Schlüssel liegt im PoC noch im Namespace jedes Agenten statt nur beim Operator (siehe Tabelle oben).
+
+**Ausbaustufe: externes Modell-Gateway.** Ein Gateway wie LiteLLM oder Envoy AI Gateway kann pro Lauf einen virtuellen Schlüssel mit eigenem Budget ausstellen und am Ende des Laufs widerrufen; der Operator hält dann nur noch das Recht, solche Schlüssel anzulegen, nicht den Hauptschlüssel. Das lohnt sich, sobald mehrere Teams eigene Budgets und Kostenzuordnung brauchen, mehrere Anbieter dazukommen oder der Operator den Hauptschlüssel nicht halten soll. Bis dahin ist der Modell-Proxy des Operators dieses Gateway (geplant als Option).
+
 ## Deklaration und Zuordnung
 
 Das Manifest deklariert, welche Secrets es gibt und wer sie bekommt. `scope` nennt Verbraucher: `command` für Kommando-Schritte, eine Agenten-ID oder einen MCP-Server:
