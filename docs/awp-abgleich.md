@@ -15,6 +15,8 @@ Stand des Abgleichs: 20.11.2026, gegen AWP `v1alpha2` auf dem Branch der Überar
 | Secrets mit `scope` | Trennung zwischen Kommando-Schritten und Agenten trägt das Sicherheitsmodell |
 | Ausgaben über `$AWP_OUTPUTS` und `complete_step` | im Entwurf übernommen (AEP-0018) |
 | Ausführungsort nicht im Manifest | alles Laufzeitspezifische passte in die Binding |
+| `model.provider` als undurchsichtige Kennung (5.4.3) | Anbieter-Profile der Laufzeit bilden den Namen auf Protokoll, Adresse und Key ab; Ollama und vLLM liefen ohne Änderung am Manifest |
+| Trennung von Katalog und Verbindung (AEP-0008) | Preise und Grenzen gehören in den Katalog, Adresse, Protokoll und Key in die Laufzeit; die Profile mischen beides noch ([Kapitel 10](10-modelle-und-kosten.md)) |
 
 ## Stand der Lücken
 
@@ -59,7 +61,7 @@ Stand des Abgleichs: 20.11.2026, gegen AWP `v1alpha2` auf dem Branch der Überar
 
 ## Neue Punkte für die Spezifikation
 
-Aus dem PoC und den Prüfungen, am 20.11.2026 als G48 bis G58 in die Lückenliste aufgenommen:
+Aus dem PoC und den Prüfungen, am 20.11.2026 als G48 bis G61 in die Lückenliste aufgenommen:
 
 1. **Läufe von einem vertrauenswürdigen Router (G48).** Ein vorhandener Router (Argo Events, Tekton Triggers) ist weder Client (manuell) noch Laufzeit. Vorschlag: eine Rolle "trusted ingress", die Läufe mit Auslöser `event` und mitgegebenem Ereignis anlegen darf; die Laufzeit prüft den Auslöser gegen das Manifest und hält die Identität fest.
 2. **Syntax von `allowHosts` (G49).** Subdomains, Ports, IP-Adressen und CIDRs sind nicht festgelegt; Allowlists sind nicht zwischen Laufzeiten übertragbar.
@@ -72,3 +74,6 @@ Aus dem PoC und den Prüfungen, am 20.11.2026 als G48 bis G58 in die Lückenlist
 9. **Zustellgarantie (G56).** Laufzeiten nennen pro Ereignisquelle die Garantie (höchstens einmal, mindestens einmal) im Konformitäts-Statement; Router können sie still herabsetzen (MQTT QoS 0).
 10. **Ereignisgesteuerte Workflows testen (G57).** Nach AEP-0004 scheitert `event.*` außerhalb von Ereignis-Läufen, und von außen angelegte Läufe sind manuell. Vorschlag: Testlauf mit mitgegebenem Ereignis, als Wiederholung markiert, geprüft gegen `dataSchema`.
 11. **Zustand als nicht vertrauenswürdige Eingabe (G58).** Was ein Lauf in den Zustand schreibt, liest der nächste als Daten; über Chat oder Webseiten kann so eine Anweisung dauerhaft werden. Herkunftsmarke (G11) auch für Zustand.
+12. **Grenzen im Katalog sind verbindlich (G59).** AEP-0008 nennt `maxOutputTokens` nur informativ. Im PoC lehnte vLLM jede Anfrage ab, bis die Laufzeit die Ausgabe auf die Grenze des Modells kappte. Preis 0 für lokale Modelle gilt als bekannter Preis.
+13. **Fähigkeiten eines Modells (G60).** Ein Agenten-Schritt braucht Tool-Aufrufe; sehr kleine Modelle rufen `complete_step` ohne Inhalt auf. Optionale Angaben wie `toolUse` im Katalog, damit die Laufzeit solche Kombinationen vor dem Start ablehnt.
+14. **Ort der Modell-Zugangsdaten (G61).** Die Spezifikation sagt nicht, wo der Key liegt. Unter dem Sicherheitsprofil darf er im Schritt nicht sichtbar sein; der Schritt meldet sich mit einem kurzlebigen, an den Lauf gebundenen Nachweis an.
