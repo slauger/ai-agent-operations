@@ -1,5 +1,7 @@
 # ai-agent-operations
 
+**Website:** https://slauger.github.io/ai-agent-operations/
+
 Referenzkonzept für den Betrieb von KI-Agenten, die wiederkehrende Arbeit erledigen: täglich etwas prüfen und melden, auf Chat-Nachrichten antworten, Repositories pflegen. Es beschreibt alle Bausteine mit Architekturbildern, Begründungen und Stand: offenes Workflow-Format (AWP), Laufzeit auf Kubernetes, GitOps mit einem Verzeichnis pro Agent, Ereignisse über MQTT und Argo Events, Chat als Oberfläche, Namespace und Egress-Proxy pro Agent, Secrets, Budgets, Zustand, Topologie und Betrieb.
 
 Jeder Baustein, der als "umgesetzt" markiert ist, lief in einem Proof of Concept auf Kubernetes.
