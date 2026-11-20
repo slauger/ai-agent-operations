@@ -10,6 +10,39 @@ Jeder Baustein, der als "umgesetzt" markiert ist, lief in einem Proof of Concept
 
 Ein Agent ist ein geprüftes, offenes Workflow-Manifest in Git; die Plattform rollt ihn per GitOps in einen eigenen, abgeschotteten Namespace aus, startet ihn deterministisch über Zeitpläne und Ereignisse, und jeder Schritt erreicht Modelle, Werkzeuge und das Internet nur über Türen, die prüfen, zählen und protokollieren.
 
+## So ist es gedacht
+
+```mermaid
+flowchart TB
+    DEV([Mensch beschreibt den Anwendungsfall]) --> GIT[(Agenten-Repository<br>ein Verzeichnis pro Agent:<br>AWP-Manifest und Werte)]
+    GIT -->|GitOps| ACD[Argo CD]
+    ACD -->|Namespace, Policy, Proxy,<br>Workflow, Binding, Sensor| NS
+
+    CHAT[Mattermost] -->|Nachricht| BR[Chat-Brücke]
+    BR -->|CloudEvent| MQ[(MQTT)]
+    MQ --> AE[Argo Events<br>Filter ohne Modell]
+    AE -->|Lauf| OP
+    CRON([Zeitplan]) --> OP
+
+    subgraph AG["Agenten-Cluster"]
+        OP[Operator<br>Modell- und Tool-Proxy,<br>Budgets, Audit]
+        subgraph NS["Namespace pro Agent"]
+            A[Agenten-Schritt<br>denkt, ohne Zugangsdaten]
+            K[Kommando-Schritt<br>handelt, fester Code]
+            SQ[Egress-Proxy<br>Allowlist]
+        end
+    end
+
+    OP -->|Pod pro Schritt| K
+    OP --> A
+    A -->|Ticket| OP
+    OP -->|Schlüssel, Budget| LLM[Modell-Anbieter]
+    K --> SQ --> WEB[Internet: erlaubte Domains]
+    SQ -->|Antwort im Thread| CHAT
+```
+
+Ein Agent ist eine Datei in Git. Argo CD rollt ihn in einen eigenen, abgeschotteten Namespace aus. Er startet nach Zeitplan oder durch ein Ereignis, das ohne Modell gefiltert wird. Jeder Schritt läuft als eigener Pod: Agenten-Schritte erreichen nur den Operator, der Modell und Budget prüft; Kommando-Schritte erreichen nur den Egress-Proxy ihres Agenten.
+
 ## Komponenten
 
 | Komponente | Aufgabe | Produkt im Proof of Concept | Stand |
