@@ -23,7 +23,7 @@ flowchart LR
 
 | Geheimnis | Liegt in | Sieht es | Sieht es nicht |
 | --- | --- | --- | --- |
-| Modell-Schlüssel | im PoC: Secret im Namespace jedes Agenten, von der Binding referenziert; geplant: nur im Namespace des Operators | der Operator (Modell-Proxy) | Schritt-Pods, solange keine Binding das Secret einem Kommando-Schritt zuordnet (heute nur Konvention) |
+| Modell-Schlüssel | nur im Namespace des Operators, im Anbieter-Profil ([Kapitel 10](10-modelle-und-kosten.md#anbieter-profile)) | der Operator (Modell-Proxy), mit Leserecht nur auf genau diese Secrets | jeder Schritt-Pod und jeder Agenten-Namespace |
 | Bot-Token, Webhook-URL, Formular-Zugang | Secret im Namespace des Agenten | Kommando-Schritte mit passendem `scope` | Agenten-Schritte, andere Agenten |
 | Ticket | Secret pro Versuch, vom Operator erzeugt | genau dieser Schritt-Versuch | alle anderen |
 | Broker-Zugang | Secret der Brücke und des Routers | Brücke (schreiben), Argo Events (lesen) | Agenten |
@@ -42,7 +42,7 @@ Ein Schritt-Pod bekommt nie den Schlüssel des Modell-Anbieters, sondern ein Tic
 | wird mit dem Schritt ungültig | der Operator prüft bei jedem Aufruf, ob genau dieser Versuch noch läuft; danach weist er das Ticket ab |
 | erlaubt nur, was das Manifest erlaubt | Modell, Werkzeuge und Budget des Schritts; jeder Aufruf im Audit |
 
-Wer einen laufenden Pod übernimmt, kann also höchstens das tun, was der Schritt ohnehin darf, und nur bis der Schritt endet. Offen sind zwei Verbesserungen: Das Ticket ist ein Bearer-Token, das ein Kommando im selben Pod lesen kann (Bindung an die Pod-Adresse nach dem ersten Abruf), und der echte Schlüssel liegt im PoC noch im Namespace jedes Agenten statt nur beim Operator (siehe Tabelle oben).
+Wer einen laufenden Pod übernimmt, kann also höchstens das tun, was der Schritt ohnehin darf, und nur bis der Schritt endet. Offen sind zwei Verbesserungen: Das Ticket ist ein Bearer-Token, das ein Kommando im selben Pod lesen kann (Bindung an die Pod-Adresse nach dem ersten Abruf), der echte Schlüssel liegt nur noch beim Operator.
 
 **Ausbaustufe: externes Modell-Gateway.** Ein Gateway wie LiteLLM oder Envoy AI Gateway kann pro Lauf einen virtuellen Schlüssel mit eigenem Budget ausstellen und am Ende des Laufs widerrufen; der Operator hält dann nur noch das Recht, solche Schlüssel anzulegen, nicht den Hauptschlüssel. Das lohnt sich, sobald mehrere Teams eigene Budgets und Kostenzuordnung brauchen, mehrere Anbieter dazukommen oder der Operator den Hauptschlüssel nicht halten soll. Bis dahin ist der Modell-Proxy des Operators dieses Gateway (geplant als Option).
 

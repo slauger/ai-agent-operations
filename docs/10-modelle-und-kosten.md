@@ -11,6 +11,26 @@
 
 Das Modell steht im Manifest pro Agent. Der Modell-Proxy lässt nur Anbieter und Modelle zu, die dort stehen.
 
+## Anbieter-Profile
+
+Welche Anbieter es gibt, legt der Betreiber im Operator fest, nicht das Manifest und nicht die Binding (umgesetzt). Ein Profil hat einen Namen, ein Protokoll, eine Basis-URL, optional einen Schlüssel im Namespace des Operators, Preise und eine Obergrenze für die Ausgabe-Tokens. Der Name ist der Anbieter im Manifest: `model: {provider: ollama, name: qwen3:1.7b}` geht an das Profil `ollama`. Gibt es kein Profil, ist der Workflow ungültig.
+
+```mermaid
+flowchart LR
+    R[Runner im Schritt-Pod] -->|Ticket| P[Modell-Proxy im Operator]
+    P -->|Profil anthropic<br>Protokoll anthropic| A[Anthropic API]
+    P -->|Profil ollama<br>Protokoll openai| O[Ollama im Cluster]
+    P -->|Profil vllm<br>Protokoll openai| V[vLLM im Cluster]
+    P -->|Profil openai<br>Protokoll openai| X[OpenAI, LiteLLM, ...]
+```
+
+| Protokoll | Schnittstelle | Für |
+| --- | --- | --- |
+| `anthropic` | Messages API | Anthropic |
+| `openai` | Chat Completions | OpenAI, Ollama, vLLM, llama.cpp, LiteLLM |
+
+Der Runner spricht beide Protokolle, der Proxy prüft für jedes eine eigene Liste erlaubter Felder und zählt die Tokens aus der jeweiligen Antwort, damit Budgets bei jedem Anbieter gleich greifen. Lokale Modelle bekommen den Preis 0. Im PoC liefen Ollama (Qwen3 1.7B) und vLLM (Qwen3 0.6B) auf CPU im Cluster für kleine Tests; vLLM braucht für Werkzeuge die Startoptionen `--enable-auto-tool-choice --tool-call-parser hermes` und eine Obergrenze der Ausgabe-Tokens unter seiner Kontextlänge. Modelle unter etwa 2B Parametern taugen nur, um die Kette zu prüfen: Das 0.6B-Modell rief das Abschluss-Werkzeug mehrfach ohne Inhalt auf oder gab die Feldbeschreibung statt einer Antwort zurück.
+
 ## Budgets
 
 Budgets sind verschachtelt: Workflow, Agent, Schritt. Jede Ebene kann Kosten, Tokens, Werkzeugaufrufe, Schritte, Dauer und Wiederholungen begrenzen.

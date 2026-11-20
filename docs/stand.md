@@ -16,6 +16,7 @@ Stand: 20.11.2026.
 | Chat-Assistent ohne Werkzeuge | eigener Kanal, jede Nachricht, Antwort im Thread |
 | Egress-Proxy | Squid ohne root mit Pod Security `restricted`: erlaubte Domain geht, andere Domain, Cluster-Dienst, Service-IP, Metadaten-Adresse und falscher Port werden verweigert |
 | Egress-Proxy im laufenden Agenten | je ein Squid in beiden Agenten-Namespaces; aus dem Namespace erreichbar: nur die erlaubten Domains |
+| Mehrere Anbieter | Anthropic, dazu Ollama und vLLM auf CPU im Cluster über das Protokoll `openai`, Kosten 0 |
 | Proxy-Variablen für Kommando-Schritte | `executor.proxy` in der Binding setzt `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`; Runner-API immer ausgenommen |
 
 ## Was nicht gezeigt ist
@@ -43,7 +44,7 @@ Aus der Sicherheitsprüfung ([Prüfprotokoll](pruefung.md)); sie betrafen den Co
 | Antwort ungefiltert gepostet, Ziel-URL aus einem Input | Antwort-Skripte | mittel | behoben: Bereinigung vor dem Posten, feste `https`-Adresse im Manifest |
 | Chat-Agent im Modus `none` kann mit wirksamen Policies nicht antworten | Chart `mattermost-chat` | mittel | behoben: eigener Squid mit dem Chat-Host als einziger Domain |
 | ServiceAccounts der Sensoren können zwischen Agenten kollidieren | Charts | mittel | behoben: Agent als Präfix, Eindeutigkeit in der CI geprüft |
-| Modell-Schlüssel liegt im Namespace jedes Agenten | Charts, Operator | mittel | offen |
+| Modell-Schlüssel liegt im Namespace jedes Agenten | Charts, Operator | mittel | behoben: Anbieter-Profile im Operator, Schlüssel nur in dessen Namespace |
 | Ticket im Pod für Kommandos lesbar | Runner | niedrig | offen |
 | keine Tages- oder Monatsgrenze für Kosten | Operator | mittel | offen |
 
