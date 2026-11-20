@@ -26,6 +26,8 @@ flowchart LR
 
 Ausgelöst um 7 Uhr (Zeitplan im Manifest, Zeitzone Europe/Berlin). Kosten pro Lauf 0,05 bis 0,28 USD, fast nur für den Kurator.
 
+Im PoC laufen die Schritte mit Außenkontakt noch ohne Egress-Proxy; Werte und Chart sind vorbereitet (geplant). `web.fetch` des Kurators geht über den Tool-Proxy des Operators, nicht über den Squid ([Kapitel 08](08-isolation-und-netzwerk.md#der-operator-als-zweite-tür)).
+
 ## Rückfrage im Thread
 
 ```mermaid
@@ -49,9 +51,8 @@ sequenceDiagram
 ```
 
 - Zwei Routen im Sensor: Erwähnung des Bots, oder Antwort in einem Thread, in dem der Bot schon geschrieben hat. Beide nur für den erlaubten Benutzer.
-- Passt eine Nachricht auf beide Routen, entstehen zwei Läufe; der zweite scheitert mit `DuplicateEvent`.
 - Ratenbegrenzung: zehn Läufe pro Minute.
-- Der Chat-Workflow nutzt das Zustands-Volume des täglichen Workflows (`state.claimName`) und liest nur.
+- Der Chat-Workflow nutzt das Zustands-Volume des täglichen Workflows (`state.claimName`). Er liest die gemeldeten Konzerte und schreibt Wünsche aus dem Gespräch in eine Vorlieben-Datei, die der Kurator am nächsten Morgen liest; das ist bequem, aber ein Weg, das Gedächtnis zu vergiften ([Kapitel 11](11-zustand-und-kontext.md)).
 - Kosten im PoC: 0,08 USD pro Antwort.
 
 ## Werte (gekürzt)

@@ -2,7 +2,7 @@
 
 ## Vorschlag
 
-Mehrere kleine, gleichförmige Cluster statt eines großen. Jeder Cluster hat einen Zweck, eine eigene Fehlerdomäne und eigene Zugänge. Alle laufen gleich: Flatcar Linux (unveränderliches Betriebssystem mit automatischen Updates) und k3s.
+Ausblick, nicht gebaut. Mehrere kleine, gleichförmige Cluster statt eines großen. Jeder Cluster hat einen Zweck, eine eigene Fehlerdomäne und eigene Zugänge. Alle laufen gleich: Flatcar Linux (unveränderliches Betriebssystem mit automatischen Updates) und k3s.
 
 ```mermaid
 flowchart TB
@@ -20,13 +20,13 @@ flowchart TB
         NS1[agent-a]
         NS2[agent-b]
     end
-    subgraph WEB["web: Webseiten, Kundendienste"]
+    subgraph WEB["public: öffentliche Dienste"]
         W1[Seiten, Portale]
     end
     subgraph POC["poc-*: Versuche"]
         P1[kurzlebig]
     end
-    subgraph HOME["Homelab-Knoten"]
+    subgraph HOME["Knoten vor Ort (Option)"]
         H1[Hardware vor Ort]
     end
     ACD --> AG & WEB & POC
@@ -40,9 +40,9 @@ flowchart TB
 | --- | --- | --- |
 | core | Argo CD als Hub, Crossplane, Chat, Broker, Secret-Speicher, Monitoring | läuft immer, wenige Änderungen, hält die Schlüssel |
 | agents | Operator, Argo Events, ein Namespace pro Agent | unvorhersagbare Arbeitslast, eigene Egress-Regeln, darf ausfallen ohne Webseiten mitzureißen |
-| web | Webseiten und Kundendienste | öffentlich erreichbar, andere Sicherheitsanforderungen |
+| public | öffentlich erreichbare Dienste | andere Sicherheitsanforderungen |
 | poc-* | Versuche, kurzlebig | wird regelmäßig weggeworfen |
-| Homelab-Knoten | Hardware vor Ort (Netz, Geräte) | als Knoten des Agenten-Clusters mit Taint, nur für Agenten, die ihn brauchen |
+| Knoten vor Ort (Option) | Hardware vor Ort (Netz, Geräte) | als Knoten des Agenten-Clusters mit Taint, nur für Agenten, die ihn brauchen. Risiko: Er öffnet Agenten den Weg ins lokale Netz; er braucht eine eigene NetworkPolicy und darf keine anderen Agenten aufnehmen |
 
 ## Warum Agenten einen eigenen Cluster bekommen
 

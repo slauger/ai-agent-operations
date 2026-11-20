@@ -38,4 +38,5 @@
 - [Abgleich mit AWP](docs/awp-abgleich.md)
 - [Offene Fragen](docs/offene-fragen.md)
 - [Stand](docs/stand.md)
+- [Prüfprotokoll](docs/pruefung.md)
 - [Glossar](docs/glossar.md)

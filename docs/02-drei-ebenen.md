@@ -40,10 +40,22 @@ flowchart TB
 
 ## Regeln
 
-1. **Das Manifest enthält keine Laufzeit-Begriffe.** Kein Namespace, kein Image-Pull-Secret, kein Volume-Name, keine Kubernetes-Secret-Namen. Ein Secret heißt im Manifest `MATTERMOST_BOT_TOKEN` und hat einen `scope`; welches Kubernetes-Secret dahintersteht, sagt die Binding.
-2. **Untere Ebenen dürfen nur enger machen.** Erlaubt das Manifest `api.example.org`, darf der Egress-Proxy das zulassen oder verbieten, aber nichts hinzufügen. Filtert das Manifest Ereignisse auf einen Absender, darf der Sensor enger filtern, nie weiter.
+1. **Das Manifest enthält keine Laufzeit-Begriffe.** Kein Namespace, kein Image-Pull-Secret, kein Volume-Name, keine Kubernetes-Secret-Namen. Ein Secret heißt im Manifest `CHAT_BOT_TOKEN` und hat einen `scope`; welches Kubernetes-Secret dahintersteht, sagt die Binding.
+2. **Untere Ebenen dürfen nur enger machen.** Erlaubt das Manifest `api.example.org`, darf der Egress-Proxy nichts hinzufügen. Verlangt das Manifest mehr, als die Plattform hergibt, wird der Workflow abgelehnt, statt still beschnitten zu laufen. Filtert das Manifest Ereignisse auf einen Absender, darf der Sensor enger filtern, nie weiter.
 3. **Die Plattform ist die Obergrenze.** Ein Manifest kann nicht mehr Netzwerk, mehr Rechte oder mehr Ressourcen bekommen, als Namespace und Policy hergeben. Ein fehlerhaftes oder manipuliertes Manifest kann die Plattform nicht öffnen.
 4. **Wer ändert, prüft auf seiner Ebene.** Eine neue Domain im Manifest ist eine fachliche Änderung im Review; eine neue Domain in der Allowlist des Proxys ist eine Betriebsänderung. Beide sind Pull Requests, aber mit anderem Blick.
+
+## Durchsetzung heute
+
+Die Regeln sind das Ziel; der PoC setzt sie nur teilweise durch:
+
+| Regel | Stand |
+| --- | --- |
+| Manifest ohne Laufzeit-Begriffe | umgesetzt (CI prüft `metadata.namespace`), bis auf `secrets[].source: kubernetes` |
+| Sensor filtert nur enger als das Manifest | offen: niemand prüft es, und die Laufzeit sieht die Ereignisdaten nicht |
+| Plattform als Obergrenze | offen: Egress-Modus, Domains und Squid-Optionen stehen in der `values.yaml` des Agenten, also im selben Pull Request wie das Manifest |
+
+Damit die dritte Ebene wirklich dem Betreiber gehört, sind geplant: ein Argo-CD-AppProject pro Agent mit erlaubten Namespaces und Ressourcen, eine Richtlinien-Prüfung der Werte in der CI (keine eigenen Squid-Regeln, kein `0.0.0.0/0`, nur freigegebene Images) und CODEOWNERS für die Plattform-Schlüssel der Werte.
 
 ## Warum nicht alles ins Manifest
 
@@ -55,4 +67,4 @@ Es wäre bequem, Netzwerkregeln, Volumes und Images im Manifest zu haben: eine D
 
 ## Doppelte Angaben sind gewollt
 
-Manche Dinge stehen auf zwei Ebenen: Das Manifest sagt "dieser Workflow braucht `www.example.org`" (`permissions.network`), der Egress-Proxy lässt `www.example.org` durch. Das ist keine Verdopplung, sondern Anspruch und Zusage. Langfristig soll der Proxy seine Allowlist aus dem Manifest ableiten, geschnitten mit einer Obergrenze des Betreibers; dann steht die Domain nur noch einmal in der Datei, die der Mensch pflegt. Die Frage, wie das Manifest seine Netzwerkwünsche ausdrückt und was eine Laufzeit damit tun muss, ist an die Spezifikation gemeldet ([Abgleich](awp-abgleich.md), G47).
+Manche Dinge stehen auf zwei Ebenen: Das Manifest sagt "dieser Workflow braucht `www.example.org`" (`permissions.network`), der Egress-Proxy lässt `www.example.org` durch. Das ist keine Verdopplung, sondern Anspruch und Zusage. Wie die Allowlist künftig aus dem Manifest abgeleitet wird, steht in [Kapitel 08](08-isolation-und-netzwerk.md#woher-die-allowlist-kommt).

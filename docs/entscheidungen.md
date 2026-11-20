@@ -10,7 +10,7 @@ Kurz begründet, in der Reihenfolge, in der sie gefallen sind. Jede Entscheidung
 | E04 | Schritt-Pods ohne Kubernetes-Token und ohne Modell-Schlüssel; Ticket pro Versuch | kleinster Spielraum; ein kompromittierter Schritt kann nichts außer seinem eigenen Auftrag | Schlüssel im Pod |
 | E05 | Kubernetes-nativ ausführen; VMs über KubeVirt, Hardware über Knoten | einheitliche Authentifizierung, RBAC, NetworkPolicy; keine von außen erreichbare API | Pull-Modus mit Runner-Registrierung (zurückgestellt) |
 | E06 | Das Datenmodell bleibt ohne Kubernetes nutzbar | Kubernetes ist Entscheidung des Betreibers; lokaler Modus als Gegenprobe | |
-| E07 | Ereignisse über MQTT und Argo Events, Format CloudEvents | vorhandene Werkzeuge, deterministische Filter, Fan-out; MQTT als einfacher interner Bus mit ACLs | eigenes Ereignissystem im Operator; Webhooks direkt an den Operator |
+| E07 | Ereignisse über MQTT und Argo Events, Format CloudEvents; Webhooks über die Webhook-EventSource | vorhandene Werkzeuge, deterministische Filter, Fan-out; MQTT als einfacher interner Bus mit ACLs | eigenes Ereignissystem im Operator; Tekton Triggers (nur HTTP) |
 | E08 | Kein Modell in Filter, Routing und Zustellung | prüfbar, nicht per Prompt umlenkbar, kostenlos | KI-Router, der entscheidet, welcher Agent zuständig ist |
 | E09 | Duplikaterkennung im Operator über Quelle und Ereignis-ID | Zustellung ist nicht genau einmal; zwei Routen können dieselbe Nachricht treffen | sich auf den Router verlassen |
 | E10 | Chat als Oberfläche, keine eigene Web-Oberfläche | Push aufs Telefon, Threads, Knöpfe vorhanden; nichts zu bauen | eigene Oberfläche |
@@ -24,3 +24,7 @@ Kurz begründet, in der Reihenfolge, in der sie gefallen sind. Jede Entscheidung
 | E18 | Egress über einen Squid pro Agent im eigenen Namespace, ohne Authentifizierung, ohne TLS-Aufbruch | Hostnamen-Regeln, Protokoll pro Agent, verschwindet mit dem Agenten; wenig Aufwand | zentraler Proxy für alle; FQDN-Policies der CNI; TLS-Aufbruch |
 | E19 | Squid aus dem gepflegten Image `ubuntu/squid` | Sicherheitsupdates vom Hersteller, läuft ohne root | eigenes Image |
 | E20 | Mehrere kleine Cluster mit Flatcar und k3s, Agenten in einem eigenen | Fehlerdomänen, Egress-Regeln, Rechte; vorerst lokal | ein großer Cluster |
+| E21 | Vor dem Produktivbetrieb: Tages- und Monatsgrenze für Kosten, Parallelitätsgrenze für Ereignis-Läufe, Pause im Operator | Budgets pro Lauf begrenzen nicht die Zahl der Läufe | nur Ratenbegrenzung im Sensor |
+| E22 | Richtung für Ereignisse: Die Laufzeit erzeugt das Trigger-Objekt aus dem Manifest und legt Ereignis-Läufe selbst an, mit dem Ereignis im Lauf (`${{ event.* }}`) | Manifest bleibt einzige Quelle, Filter prüfbar, passt zu AEP-0004 und AEP-0021; Sensor braucht kein Recht auf Läufe | von Hand gepflegter Sensor, der Läufe mit Inputs anlegt (heutiger PoC) |
+| E23 | Jedes Manifest setzt `permissions.network` ausdrücklich, Standard `egress: deny` | ohne Block gilt in AWP `egress: allow` | sich auf die Plattform verlassen |
+| E24 | Zustand und Thread-Verlauf gelten als nicht vertrauenswürdige Eingabe | Gedächtnis und Verlauf können fremde Anweisungen tragen | Zustand als vertrauenswürdig behandeln |

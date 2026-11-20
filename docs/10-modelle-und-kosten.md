@@ -15,16 +15,22 @@ Das Modell steht im Manifest pro Agent. Der Modell-Proxy lässt nur Anbieter und
 
 Budgets sind verschachtelt: Workflow, Agent, Schritt. Jede Ebene kann Kosten, Tokens, Werkzeugaufrufe, Schritte, Dauer und Wiederholungen begrenzen.
 
-```mermaid
-flowchart TB
-    W["Workflow: maxCostUsd 0.50, maxDuration 15m"] --> A1["Agent Sammler: 0.05"]
-    W --> A2["Agent Kurator: 0.30"]
-    A2 --> S1["Schritt curate: maxTokens 100000"]
+```yaml
+budget: {maxCostUsd: 0.50, maxDuration: 15m}      # ganzer Lauf
+agents:
+  - id: collector
+    budget: {maxCostUsd: 0.05}
+  - id: curator
+    budget: {maxCostUsd: 0.30}
+workflow:
+  - id: curate
+    agent: curator
+    budget: {resources: {maxTokens: 100000}}
 ```
 
 Der Modell-Proxy zählt nach jedem Aufruf. Ein erlaubter Aufruf darf eine Grenze überschreiten, danach wird nichts mehr erlaubt und der Lauf endet mit Fehler; nachfolgende Schritte werden übersprungen. Im PoC getestet: Mit `maxCostUsd: 0.01` stoppt der Lauf im Kurator, Zustellung und Merken entfallen.
 
-Geplant ist eine **Monatsgrenze über alle Agenten**: Ist sie erreicht, pausieren alle Zeitpläne und es kommt eine Meldung. Heute gibt es Grenzen nur pro Lauf.
+Heute gibt es Grenzen nur pro Lauf. Für Ereignis-Läufe begrenzt sonst nur die Ratenbegrenzung des Sensors: 10 Läufe pro Minute zu 0,10 USD sind bis zu 1440 USD am Tag, ausgelöst von einem einzigen erlaubten Benutzer oder einer Schleife. Deshalb sind vor dem Produktivbetrieb Pflicht (geplant): eine **Tages- und Monatsgrenze** pro Agent und über alle Agenten (ist sie erreicht, nimmt die Laufzeit keine neuen Läufe an und meldet das), und eine **Parallelitätsgrenze** pro Workflow für Ereignis-Läufe.
 
 ## Was es kostet
 
@@ -42,6 +48,25 @@ Daraus folgen drei Regeln:
 1. **Teure Schritte nur, wenn nötig.** Der Kurator läuft heute auch, wenn nichts Neues da ist. Bedingte Schritte fehlen in der Spezifikation (G04); das kostet rund 1,50 USD im Monat für Läufe, die nichts melden.
 2. **Kontext ist der Kostentreiber.** Ein Profil von 50 KB in jedem Lauf kostet mehr als jede Antwort. Profile kürzen, zusammenfassen oder als Werkzeug abrufbar machen.
 3. **Kein Modell für Status.** Fragen wie "Läuft alles?" beantwortet die Laufzeit aus dem Kubernetes-Status, ohne Modell ([Kapitel 12](12-beobachtung.md)).
+
+## Ratenlimits und Ausfälle des Anbieters
+
+Modell-Anbieter begrenzen Anfragen pro Minute und Tokens pro Minute pro Schlüssel. Ein Schlüssel für alle Agenten heißt: Ein gesprächiger Agent bremst alle anderen. Geplant: Wiederholung mit Backoff bei HTTP 429 und 529 im Modell-Proxy (heute scheitert der Schritt), ein Schlüssel oder Arbeitsbereich pro Agent oder Team für getrennte Limits und Kostenzuordnung, und eine Meldung, wenn der Anbieter länger nicht erreichbar ist.
+
+## Fixkosten der Plattform
+
+Neben den Modellkosten kostet die Plattform selbst Rechenleistung. Grobe Schätzung für die Planung, nicht gemessen:
+
+| Teil | Anzahl | Speicher, ungefähr |
+| --- | --- | --- |
+| Operator | 1 (Hochverfügbarkeit offen) | 128 MiB |
+| Argo Events: Controller, EventSource, EventBus (JetStream) | 1 bis 3 | 256 MiB bis 1 GiB, je nach Replikas des EventBus |
+| Sensor | einer pro Workflow mit Ereignissen | je rund 50 MiB |
+| Egress-Proxy | einer pro Agent im Modus `proxy` | je rund 30 MiB |
+| Schritt-Pod | einer pro laufendem Schritt, nur während des Laufs | 64 bis 256 MiB |
+| Argo CD, Broker, Chat | gemeinsam mit anderen Diensten | |
+
+Ein Agenten-Cluster für einige Dutzend Agenten passt auf zwei bis drei kleine Knoten. Jeder Schritt startet einen Pod; das kostet einige Sekunden pro Schritt, bei Chat-Antworten mit drei Schritten also rund zehn Sekunden bis zur Antwort, bevor das Modell überhaupt rechnet.
 
 ## Preise
 

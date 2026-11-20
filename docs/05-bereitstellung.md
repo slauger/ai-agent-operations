@@ -55,25 +55,20 @@ flowchart LR
 
 - **ApplicationSet** mit Git-Dateien-Generator auf `agents/*/agent.yaml`. Jede Datei ergibt eine Application `agent-<verzeichnis>` mit Ziel-Namespace `agent-<verzeichnis>`.
 - **Zwei Quellen pro Application:** das Chart aus `agent.yaml` mit der `values.yaml` des Agenten, und das Verzeichnis selbst mit allen Dateien `*workflow.yaml`. Das Manifest wird also nicht durch Helm geschleust, sondern unverändert angewendet; so bleibt es dieselbe Datei, die `awp-check` geprüft hat.
-- **Automatischer Sync mit Prune und Self-Heal.** Was aus Git verschwindet, löscht Argo CD. Das Chart rendert den Namespace selbst (nicht `CreateNamespace`), deshalb verschwindet beim Entfernen des Verzeichnisses auch der Namespace.
+- **Automatischer Sync mit Prune und Self-Heal.** Was aus Git verschwindet, löscht Argo CD. Das Chart rendert den Namespace selbst (nicht `CreateNamespace`), deshalb verschwindet beim Entfernen des Verzeichnisses auch der Namespace, samt Zustand und von Hand angelegten Secrets. Ein Schutz vor versehentlichem Löschen ist offen (O13). Self-Heal heißt auch: Änderungen von Hand im Cluster setzt Argo CD in Sekunden zurück ([Kapitel 15](15-betrieb.md#einen-agenten-abschalten)).
 - **Keine Abhängigkeit von OCI.** Charts liegen im selben Repository und werden über Pfade eingebunden; Abhängigkeiten zwischen Charts laufen über `file://`.
 
 Im PoC dauert es vom Push bis zum laufenden Agenten rund 20 Sekunden (mit Refresh), das Entfernen genauso.
 
-## Charts
+Das ApplicationSet nutzt im PoC das Argo-CD-Projekt `default`. Geplant ist ein AppProject, das nur die Namespaces `agent-*` und `agent-events` und nur die Ressourcen der Charts erlaubt; sonst könnte ein Chart beliebige Objekte im Cluster anlegen.
 
-```mermaid
-flowchart TB
-    L[agent-lib<br>Bibliothek] --> G[agent<br>generisch]
-    L --> MC[mattermost-chat<br>Anwendungsfall]
-    SQ[squid<br>externes Chart] --> G
-```
+## Charts
 
 | Chart | Art | Rendert |
 | --- | --- | --- |
 | `agent-lib` | Bibliothek | Vorlagen: Namespace mit Pod Security `restricted`, NetworkPolicy `agent-egress`, WorkflowBinding, Sensor mit ServiceAccount und RBAC |
 | `agent` | generisch | ein oder mehrere Workflows (`workflows:` in den Werten), je Workflow Binding und optional Sensor; Egress-Proxy als Abhängigkeit |
-| `mattermost-chat` | Anwendungsfall | Chat-Agent: berechnet Filter aus Kanal, Modus (Kanal oder Erwähnung), Bot-Name und erlaubten Benutzern; bindet den Bot-Token |
+| `mattermost-chat` | Anwendungsfall | Chat-Agent: berechnet Filter aus Kanal, Modus (Kanal oder Erwähnung), Bot-Name und erlaubten Benutzern; bindet den Bot-Token. Braucht noch den Egress-Proxy mit dem Chat-Host als einziger Domain (offen, O11) |
 
 Die Bibliothek enthält, was für alle gleich ist; Anwendungs-Charts übersetzen fachliche Werte ("antworte in Kanal X, nur Benutzer Y") in Filter und Bindings. Wer einen neuen Typ von Agent häufiger braucht, baut ein weiteres Anwendungs-Chart auf der Bibliothek.
 
@@ -83,6 +78,7 @@ Die Bibliothek enthält, was für alle gleich ist; Anwendungs-Charts übersetzen
 | --- | --- | --- |
 | Namespace, Pod Security, NetworkPolicy, Egress-Proxy, RBAC | Argo CD über das Chart | Plattform-Grenzen, gehören dem Betreiber |
 | Workflow (AWP) | Argo CD, unverändert aus dem Verzeichnis | geprüftes Manifest |
+| Squid-Regeln, Egress-Modus | heute: Werte des Agenten; geplant: Obergrenze des Betreibers außerhalb des Agenten-Verzeichnisses | siehe [Kapitel 02](02-drei-ebenen.md#durchsetzung-heute) |
 | WorkflowBinding, Sensor | Argo CD über das Chart | Laufzeit-Bindung |
 | WorkflowRun | Zeitplan, Sensor, Mensch | ein Lauf ist kein Soll-Zustand und gehört nicht in Git |
 | Schritt-Pods, Zustands-Volume | Operator | Laufzeit-Details |
@@ -96,4 +92,4 @@ Die CI des Agenten-Repositorys prüft jede Änderung:
 - Skripte der Agenten: Typprüfung und Unit-Tests pro Agent
 - Images (Runtime und Werkzeug-Images) bauen
 
-Geplant: `awp-check` als Prüfung und als Admission-Webhook im Cluster, damit ungültige Manifeste gar nicht erst ankommen (G09).
+Geplant: `awp-check` in der CI und eine Prüfung im Cluster, damit ungültige Manifeste gar nicht erst ankommen (G09). Der AWP-Entwurf (AEP-0021) setzt dafür auf eine CRD, die unbekannte Felder verwirft, plus CEL-Regeln statt eines Webhooks. Ebenfalls geplant: eine Richtlinien-Prüfung der Werte (siehe oben) und eine Prüfung, dass Sensor-Filter nur enger sind als der `filter` im Manifest.

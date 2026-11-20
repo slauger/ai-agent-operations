@@ -26,7 +26,7 @@ flowchart LR
 1. **Brücke:** hört über die WebSocket-API des Chats in allen Kanälen mit, in denen ihr Bot Mitglied ist. Sie überspringt Bots, Webhooks, Systemnachrichten und Änderungen und veröffentlicht jede Nachricht als CloudEvent auf `agentable/events/<chat>/<team>/<kanal>`. Bei Antworten in einem Thread hängt sie den bisherigen Verlauf an.
 2. **Broker:** Mosquitto mit Benutzer und ACL pro Client. Nur die Brücke darf Chat-Ereignisse schreiben, der Router darf nur lesen. Das ist die Grundlage dafür, dass Abnehmer dem Feld `user` glauben.
 3. **EventSource und EventBus:** Argo Events abonniert einmal und verteilt intern über einen JetStream-EventBus.
-4. **Sensor pro Workflow:** filtert deterministisch (Quelle, Typ, Kanal, Absender, Erwähnung, Thread) und legt einen `WorkflowRun` an, mit `trigger.type: event`, Quelle, Typ, Ereignis-ID und den Feldern als Inputs. Ein Ereignis kann mehrere Workflows starten.
+4. **Sensor pro Workflow:** filtert deterministisch (Quelle, Typ, Kanal, Absender, Erwähnung, Thread) und legt einen `WorkflowRun` an, mit `trigger.type: event`, Quelle, Typ, Ereignis-ID und den Feldern als Inputs. Ein Ereignis kann mehrere Workflows starten. Sensoren laufen gemeinsam im Namespace `agent-events` und sehen alle Ereignisse; ihr ServiceAccount darf nur `WorkflowRun` im Namespace ihres Agenten anlegen.
 5. **Operator:** prüft, ob der Workflow diesen Auslöser erlaubt, verwirft Duplikate und führt aus.
 
 Bis zum Agenten-Schritt ist kein Modell beteiligt.
@@ -49,21 +49,22 @@ Jede Nachricht auf dem Bus ist ein CloudEvent 1.0 im strukturierten JSON-Format:
     "team": "team", "userId": "...", "user": "alice",
     "message": "@scout was spielt im März?", "mentions": ["scout"],
     "thread": [{"user": "scout", "bot": true, "time": "...", "message": "..."}],
+    "threadUsers": ["scout", "alice"],
     "threadTruncated": false
   }
 }
 ```
 
-Warum CloudEvents, obwohl Argo Events intern ohnehin einen eigenen Rahmen baut: `id` dient der Duplikaterkennung, andere Abnehmer am Broker bekommen ein beschriebenes Format, und `source` und `type` passen direkt zu `source` und `eventType` der AWP-Auslöser.
+Warum CloudEvents, obwohl Argo Events intern ohnehin einen eigenen Rahmen baut: `id` dient der Duplikaterkennung, andere Abnehmer am Broker bekommen ein beschriebenes Format, und `source` und `type` passen zu `source` und `eventType` der AWP-Auslöser. AWP selbst nennt CloudEvents nicht; ob `source` im Auslöser den Erzeuger meint (CloudEvents) oder einen Adapter, ist dort offen.
 
 ## Filtern auf zwei Ebenen
 
 | Ebene | Was dort steht | Beispiel |
 | --- | --- | --- |
-| Manifest (geprüft, im Digest) | welche Ereignisse der Workflow annimmt: `source`, `eventType`, einfacher `filter` | `filter: {data.user: alice}` |
+| Manifest (im Digest) | welche Ereignisse der Workflow annimmt: `source`, `eventType`, einfacher `filter`. Heute beschreibend: AWP legt die Bedeutung des Filters nicht fest (G42), und die Laufzeit sieht die Ereignisdaten nicht | `filter: {data.user: alice}` |
 | Sensor (Laufzeit) | wie Ereignisse ankommen und feinere Filter | Erwähnung des Bots ODER Antwort in einem Thread des Bots; Ratenbegrenzung |
 
-Regel: Der Sensor darf nur enger filtern als das Manifest. Langfristig soll die Laufzeit den Sensor aus dem `triggers`-Block erzeugen, dann bleibt das Manifest die einzige Quelle.
+Regel: Der Sensor darf nur enger filtern als das Manifest; geprüft wird das heute nicht. Die Richtung ist deshalb, dass die Laufzeit das Trigger-Objekt aus dem `triggers`-Block erzeugt und selbst Läufe anlegt (O01). Dann bleibt das Manifest die einzige Quelle, die Laufzeit kann das Ereignis im Lauf festhalten und als `${{ event.* }}` bereitstellen (AEP-0004), und ein Sensor braucht kein Recht mehr, Läufe anzulegen. Ein von Hand geschriebener Argo-Sensor passt nicht in das Binding-Modell des AWP-Entwurfs (AEP-0021): Dort sind Bindings eigene Arten der Laufzeit mit `targetRefs` und Status.
 
 ## Zustellung und Duplikate
 
@@ -71,16 +72,10 @@ Ehrlich benannt: Die Brücke veröffentlicht mit QoS 1 (mindestens einmal), aber
 
 Umgekehrt können Ereignisse doppelt ankommen: zwei Routen im selben Sensor passen auf dieselbe Nachricht (Erwähnung in einem Thread), ein Neustart, eine Wiederholung. Deshalb verwirft der Operator einen zweiten Lauf mit gleicher Quelle und Ereignis-ID (Label aus dem Hash von `source/id`). Das ist Pflicht, nicht Kür; im PoC hat es genau diesen Fall zweier passender Routen abgefangen.
 
-## Abgrenzung zu CI/CD
-
-| | CI/CD (Tekton, GitLab CI, Forgejo Actions) | AWP | Laufzeit (agentable) |
-| --- | --- | --- | --- |
-| Was | Engine für feste Abläufe | Spezifikation, keine Engine | Laufzeit für AWP auf Kubernetes |
-| Wer handelt | vertrauenswürdiger, fest geschriebener Code | Agenten mit nicht vorhersagbarem Verhalten, dazu Kommandos | |
-| Kernfrage | läuft Build, Test, Deploy durch | was darf ein Agent: Modell, Werkzeuge, Aktionen, Budget, Freigaben, Daten, Audit | setzt das durch |
-
-Für die Mechanik drumherum wird nichts nachgebaut: Auslöser kommen aus Argo Events (MQTT eingebaut, Sensoren mit Filtern, Trigger legen beliebige Kubernetes-Ressourcen an). Tekton Triggers hat dasselbe Modell, spricht aber nur HTTP. Ein Agenten-Schritt mit Ticket, Proxy und späteren Freigaben passt schlecht in eine CI-Task; deshalb führt die Laufzeit Schritte selbst aus.
+Grenzen: Die Erkennung kennt nur Läufe, die noch aufbewahrt werden (`history.keep`); eine viel spätere Wiederholung läuft durch. Ein verworfenes Duplikat erscheint heute als `Failed` und würde einen Alarm auf fehlgeschlagene Läufe auslösen; vorgeschlagen ist eine eigene Phase `Skipped`. Parallelität für Ereignis-Läufe (wie `concurrencyPolicy` beim Zeitplan) gibt es weder in AWP noch in der Laufzeit (G43); bis dahin begrenzt nur die Ratenbegrenzung des Sensors.
 
 ## Webhooks und weitere Quellen
 
-Weitere Quellen kommen nach demselben Muster: Ein Webhook-Eingang (Argo Events Webhook-EventSource) oder eine weitere Brücke wandelt in CloudEvents, ein Sensor pro Workflow filtert. Für jede Quelle gilt: Authentifiziert wird die Quelle (Signatur, Token, Broker-ACL), nicht der Inhalt.
+Weitere Quellen kommen nach demselben Muster: Ein Webhook-Eingang (Argo Events Webhook-EventSource) oder eine weitere Brücke wandelt in CloudEvents, ein Sensor pro Workflow filtert. Für jede Quelle gilt: Authentifiziert wird die Quelle (Signatur, Token, Broker-ACL), nicht der Inhalt. Entschieden ist: Webhooks kommen über die Webhook-EventSource von Argo Events, nicht über Tekton Triggers (E07).
+
+Ist nur eine einzige Quelle angebunden, ist die Kette Brücke, Broker, EventSource, EventBus lang. Sie lohnt sich ab der zweiten Quelle und für Abnehmer außerhalb der Agenten; für einen reinen Chat-Anschluss wäre eine Brücke, die direkt CloudEvents an eine Webhook-EventSource schickt, kürzer.

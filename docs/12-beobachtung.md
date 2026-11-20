@@ -28,7 +28,7 @@ Der zweite Lauf ist das Duplikat derselben Nachricht (Grund `DuplicateEvent`), d
 
 ## Audit-Ereignisse
 
-Der Operator schreibt die Audit-Ereignisse aus AWP als JSON-Zeilen: Lauf gestartet (mit Digest des Manifests), Schritt gestartet und beendet, Modellaufruf, Werkzeugaufruf, Budget erreicht. Zusammen mit dem Zugriffsprotokoll des Egress-Proxys ergibt sich pro Lauf: wer hat ausgelöst, welches Manifest lief, welches Modell wurde wie oft gefragt, was hat es gekostet, welche Domains wurden angefragt und welche verweigert.
+Der Operator schreibt die Audit-Ereignisse aus AWP als JSON-Zeilen (umgesetzt): Lauf gestartet (mit Digest des Manifests), Schritt gestartet und beendet, Modellaufruf, Werkzeugaufruf, Budget erreicht. Zusammen mit dem Zugriffsprotokoll des Egress-Proxys ergibt sich pro Lauf: welches Manifest lief, welches Modell wurde wie oft gefragt, was hat es gekostet, welche Domains haben Kommando-Schritte angefragt und welche wurden verweigert. Zwei Lücken: Abrufe über den Tool-Proxy (`web.fetch`) stehen nur im Audit des Operators, nicht im Proxy-Protokoll; und Ereignis-Läufe haben den Akteur `system`, der auslösende Mensch steht nur in den Eingaben (G44).
 
 ## Meldungen
 

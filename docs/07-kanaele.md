@@ -29,11 +29,11 @@ flowchart TB
 
 | Konto | Aufgabe | Rechte |
 | --- | --- | --- |
-| Brücke | hört mit, schreibt nie | Mitglied in den Kanälen, die Ereignisse liefern sollen |
+| Brücke | hört mit, schreibt nie (Konvention: ein Bot-Token im Chat ist nie nur lesend, er wird wie ein Schreib-Token geschützt) | Mitglied nur in den Kanälen, die Ereignisse liefern sollen |
 | ein Bot pro Agent | antwortet im Namen des Agenten | schreibt in seine Kanäle; Token als Secret mit `scope: command` |
 | Webhook pro Meldekanal | Meldungen ohne Bot | nur dieser Kanal |
 
-Die Brücke ist bewusst ein eigenes Konto: Sie braucht Lesezugriff auf viele Kanäle, darf aber nichts schreiben. Antworten kommen vom Bot des Agenten, damit im Chat sichtbar ist, wer antwortet, und damit ein Agent nicht im Namen eines anderen schreiben kann. Die Brücke überspringt Nachrichten aller Bots; ein Agent kann sich so nicht selbst auslösen.
+Die Brücke ist bewusst ein eigenes Konto: Sie braucht Lesezugriff auf viele Kanäle, schreibt aber nichts. Antworten kommen vom Bot des Agenten, damit im Chat sichtbar ist, wer antwortet, und damit ein Agent nicht im Namen eines anderen schreiben kann. Die Brücke überspringt Nachrichten aller Bots; ein Agent kann sich so nicht selbst auslösen.
 
 ## Formatierung
 
@@ -43,7 +43,14 @@ Meldungen sind für das Telefon geschrieben: kurze Zeilen, nach Monat gruppierte
 
 Wie kommt die Antwort an die richtige Stelle? Das Ereignis bringt die Korrelationsdaten mit (`channelId`, `rootId`), der Sensor gibt sie als Inputs weiter, und der letzte Schritt postet mit dem Bot-Token über die REST-API in den Thread. Es gibt keinen Rückkanal über MQTT; die Zustellung ist ein normaler Kommando-Schritt mit festem Code (`reply.py` im Runtime-Image).
 
-Diese Lösung hält das Manifest ehrlich: Es sieht, dass ein Schritt nach außen schreibt, und es braucht dafür ein Secret. Die Spezifikation kennt den Rückweg noch nicht als eigenes Konzept (G45); vorgeschlagen ist, nur die Korrelationsdaten im Ereignis zu standardisieren und die Zustellung den Schritten zu lassen.
+Diese Lösung hält das Manifest ehrlich: Es sieht, dass ein Schritt nach außen schreibt, und es braucht dafür ein Secret.
+
+Zwei Regeln für den Antwort-Schritt (beide offen):
+
+- **Ziel fest, nicht aus Eingaben.** Die Adresse des Chats kommt aus der Binding, nur `https://`, nicht aus einem Input; sonst könnte ein Lauf den Token an ein fremdes Ziel schicken.
+- **Antwort bereinigen.** Die Antwort des Modells wird vor dem Posten bereinigt: keine Bilder (ein Bild mit Daten in der URL wird vom Client geladen), Links nur zu erlaubten Hosts, keine Massen-Erwähnungen wie `@all`.
+
+Die Spezifikation kennt den Rückweg noch nicht als eigenes Konzept (G45); vorgeschlagen ist, nur die Korrelationsdaten im Ereignis zu standardisieren und die Zustellung den Schritten zu lassen.
 
 ## Weitere Kanäle
 

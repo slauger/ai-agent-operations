@@ -30,7 +30,7 @@ users: [alice]
 
 Dazu das Manifest `workflow.yaml` (siehe [Kapitel 03](03-workflow-manifest.md#beispiel)). Das Anwendungs-Chart `mattermost-chat` macht daraus:
 
-- Namespace `agent-assistent` mit Pod Security `restricted` und NetworkPolicy im Modus `none` (nur DNS und Operator)
+- Namespace `agent-assistent` mit Pod Security `restricted` und NetworkPolicy (im PoC Modus `none`, siehe unten)
 - Binding mit dem Bot-Token als Secret für Kommando-Schritte
 - Sensor mit dem Filter "Kanal `assistent`, Benutzer `alice`, jede Nachricht" und den Feldern als Inputs (Nachricht, Thread-Verlauf als JSON, Kanal, Thread)
 
@@ -40,5 +40,5 @@ Kein eigenes Image: Die Antwort stellt das generische Runtime-Image zu (`reply.p
 
 - **Ein neuer Agent ist eine Datei-Änderung.** Drei Dateien, ein Push, nach rund 20 Sekunden antwortet der Assistent. Verzeichnis löschen, er ist weg.
 - **Anwendungs-Charts kapseln Wissen.** Wer einen Chat-Agenten anlegt, schreibt "Kanal und Benutzer", nicht Sensor-Pfade.
-- **Netz zu ist der Normalfall.** Der Assistent braucht keinen Egress-Proxy; sein Agenten-Schritt spricht nur mit dem Operator, sein Kommando-Schritt nur mit dem Chat. (Im PoC erreicht der Kommando-Schritt den Chat noch direkt; im Agenten-Cluster geht auch das über den Proxy oder eine Allowlist für den Chat.)
+- **Netz zu ist der Normalfall, aber nicht ganz.** Der Agenten-Schritt spricht nur mit dem Operator. Der Antwort-Schritt muss den Chat erreichen; im Modus `none` ginge das mit wirksamen NetworkPolicies nicht mehr. Das Anwendungs-Chart braucht deshalb einen Egress-Proxy mit dem Chat-Host als einziger Domain (offen, O11). Im PoC fällt das nicht auf, weil Docker Desktop die Policies nicht durchsetzt.
 - **Kosten unter 0,02 USD pro Antwort.**

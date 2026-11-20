@@ -47,10 +47,10 @@ Für Menschen, die Plattformen betreiben oder Agenten produktiv einsetzen wollen
 | Chat und Benachrichtigung | vorhandener Team-Chat | Mattermost, eine kleine Brücke zum Bus |
 | Netzwerkgrenze | NetworkPolicy plus Egress-Proxy pro Agent | Kubernetes NetworkPolicy, Squid |
 | Modelle | über einen Proxy mit Budget | Anthropic Claude |
-| Cluster | kleine, gleichförmige Cluster | k3s auf Flatcar Linux, lokal Docker Desktop |
+| Cluster | kleine, gleichförmige Cluster | lokal Docker Desktop, Broker und Chat auf k3s; Flatcar mit k3s geplant |
 
 Die Produkte sind austauschbar; die Grenzen zwischen den Bausteinen sind es nicht. Wer Argo Events durch Knative Eventing ersetzt oder Mattermost durch Matrix, ändert einen Baustein, nicht das Konzept.
 
 ## Stand der Angaben
 
-Stand: 20.11.2026. Das Konzept ist ein Entwurf. Kennzeichnungen: **umgesetzt** (lief im PoC), **geplant** (entschieden, nicht gebaut), **offen** (nicht entschieden).
+Stand: 20.11.2026. Das Konzept ist ein Entwurf und wurde dreimal unabhängig geprüft ([Prüfprotokoll](pruefung.md)). Kennzeichnungen: **umgesetzt** (lief im PoC), **teilweise** (gebaut, mit bekannter Lücke), **geplant** (entschieden, nicht gebaut), **offen** (nicht entschieden oder nicht gelöst).

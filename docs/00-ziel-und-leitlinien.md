@@ -37,5 +37,13 @@ Gemeinsam ist allen: wenige Schritte, ein klares Ergebnis, ein Kanal, in dem es 
 ## Was das Konzept nicht ist
 
 - **Keine Agenten-Bibliothek.** Wie ein Agent intern denkt (Tool-Schleife, Planung), ist Sache der Laufzeit; das Konzept legt nur fest, was er darf.
-- **Keine CI/CD-Engine.** Feste Abläufe aus vertrauenswürdigem Code (Build, Test, Deploy) gehören weiter in Tekton, GitLab CI oder Forgejo Actions. Die Abgrenzung steht in [Kapitel 06](06-ereignisse.md#abgrenzung-zu-cicd).
+- **Keine CI/CD-Engine.** Feste Abläufe aus vertrauenswürdigem Code gehören weiter in Tekton, GitLab CI oder Forgejo Actions:
+
+| | CI/CD | AWP | Laufzeit |
+| --- | --- | --- | --- |
+| Was | Engine für feste Abläufe | Spezifikation, keine Engine | Laufzeit für AWP auf Kubernetes |
+| Wer handelt | vertrauenswürdiger, fest geschriebener Code | Agenten mit nicht vorhersagbarem Verhalten, dazu Kommandos | |
+| Kernfrage | läuft Build, Test, Deploy durch | was darf ein Agent: Modell, Werkzeuge, Aktionen, Budget, Freigaben, Daten, Audit | setzt das durch |
+
+Für die Mechanik drumherum wird nichts nachgebaut (Auslöser aus Argo Events). Ein Agenten-Schritt mit Ticket, Proxy und Freigaben passt aber schlecht in eine CI-Task; deshalb führt die Laufzeit Schritte selbst aus (E03).
 - **Kein Produkt mit Oberfläche.** Wer Dashboards für Manager braucht, baut sie auf die Kubernetes-API oder die Audit-Ereignisse.

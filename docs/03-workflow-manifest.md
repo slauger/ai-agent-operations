@@ -25,8 +25,8 @@ flowchart LR
 | `triggers` | wann ein Lauf starten darf | `schedule` mit Cron und Zeitzone; `event` mit `source`, `eventType`, `filter` |
 | `inputs` | Parameter eines Laufs | Liste der Quellen, Thread-ID, Nachricht |
 | `agents` | wer denkt: Modell, Anweisungen, Werkzeuge, eigene Rechte und Budgets | Sammler mit kleinem Modell und `web.fetch`, Kurator mit größerem Modell ohne Werkzeuge |
-| `secrets` | welche Geheimnisse es gibt und welche Schrittart sie sieht | `MATTERMOST_BOT_TOKEN` mit `scope: [command]` |
-| `permissions` | was erlaubt ist, Standard ist verboten | `shell.execute`, Lese- und Schreibpfade |
+| `secrets` | welche Geheimnisse es gibt und wer sie bekommt (`scope`: Kommando-Schritte, eine Agenten-ID oder ein MCP-Server) | `CHAT_BOT_TOKEN` mit `scope: [command]` |
+| `permissions` | was erlaubt ist: Werkzeuge, Dateipfade, Netzwerk | `shell.execute`, Lese- und Schreibpfade, `network: {egress: deny, allowHosts: [...]}` |
 | `budget` | Obergrenzen für den ganzen Lauf, verschachtelt pro Agent und Schritt | `maxCostUsd: 0.1`, `maxDuration: 5m` |
 | `workflow` | die Schritte mit Abhängigkeiten | `answer` (Agent) dann `reply` (Kommando) |
 
@@ -38,16 +38,16 @@ Governance-Angaben wie `owner`, `classification`, `purpose` und `risk` stehen im
 | --- | --- | --- |
 | Was läuft | Tool-Schleife des Runners gegen das Modell | ein Kommando im Image aus dem Manifest |
 | Vorhersagbar | nein | ja, Code aus dem Repository |
-| Nach außen | nur über Modell- und Tool-Proxy | über den Egress-Proxy, wenn die Plattform es erlaubt |
-| Eingaben | Aufgabe mit Ausdrücken `${{ inputs.x }}`, `${{ steps.y.outputs.z }}` | nur über `env`, nie im Kommando selbst |
+| Nach außen | nur über Modell- und Tool-Proxy | nur zu `allowHosts`, durchgesetzt über den Egress-Proxy |
+| Eingaben | Aufgabe mit Ausdrücken `${{ inputs.x }}`, `${{ steps.y.outputs.z }}`, künftig `${{ event.data.x }}` | nur über `env`, nie im Kommando selbst |
 | Ausgaben | Abschluss-Werkzeug `complete_step` | eine Datei pro Ausgabe in `$AWP_OUTPUTS` |
-| Secrets | nur mit `scope: [agent]`, im PoC nicht genutzt | mit `scope: [command]` als Umgebungsvariable |
+| Secrets | nur wenn `scope` die Agenten-ID nennt; im PoC nicht genutzt | mit `scope: [command]` als Umgebungsvariable |
 
 Die Faustregel: **Denken im Agenten, Handeln im Kommando.** Der Agent formuliert eine Antwort, das Kommando schickt sie ab. Wer etwas zustellt, Zustand schreibt oder einen Token braucht, ist ein Kommando-Schritt mit festem Code. So bleibt der Teil, der Seiteneffekte hat, prüfbar, und der Teil, der unvorhersagbar ist, hat keine Zugangsdaten.
 
 ## Beispiel
 
-Ein Chat-Assistent, gekürzt (vollständig im [Beispiel](beispiel-assistent.md)):
+Ein Chat-Assistent, gekürzt (vollständig im [Beispiel](beispiel-assistent.md)). So läuft er im PoC: Die Felder der Nachricht kommen als Inputs, weil die Laufzeit die Wurzel `${{ event.* }}` aus dem AWP-Entwurf (AEP-0004) noch nicht kennt. Dort ist entschieden, Ereignisse nicht auf Inputs abzubilden; die Zielform steht unter dem Beispiel.
 
 ```yaml
 apiVersion: awp.agenticworkflowprotocol.org/v1alpha2
@@ -84,6 +84,7 @@ spec:
   permissions:
     default: deny
     tools: {shell.execute: {allow: true}}
+    network: {egress: deny, allowHosts: [chat.example.org]}
   workflow:
     - id: answer
       agent: assistant
@@ -102,18 +103,36 @@ spec:
       dependsOn: [answer]
 ```
 
+Zielform nach AEP-0004 (Ausschnitt): keine Pflicht-Inputs für Ereignisfelder, sondern eine beschriebene Ereignis-Nutzlast.
+
+```yaml
+  triggers:
+    - type: event
+      source: chat.example.org
+      eventType: org.example.chat.post
+      filter: {data.user: alice}
+  workflow:
+    - id: answer
+      agent: assistant
+      task: |
+        Verlauf: ${{ event.data.thread }}
+        Neue Nachricht: ${{ event.data.message }}
+```
+
+Was `filter` genau vergleicht (CloudEvents-Attribute, Pfade in den Daten, nur Gleichheit), legt AWP noch nicht fest (G42); bis dahin ist der Filter im Manifest beschreibend, durchgesetzt wird im Sensor.
+
 ## Was das Manifest heute nicht ausdrücken kann
 
 Der PoC hat gezeigt, wo das Format noch Lücken hat. Die wichtigsten, mit Nummer aus der Rückmeldeliste an die Spezifikation:
 
 | Lücke | Folge im Betrieb | Behelf im PoC |
 | --- | --- | --- |
-| Wie ein Schritt Ausgaben abgibt (G01), Ausgaben ohne Typ (G02) | Kommando-Images laufen nur auf der Laufzeit, für die sie geschrieben sind | Konvention `$AWP_OUTPUTS` und `complete_step` |
+| Ausgaben ohne Typ (G02) | die Laufzeit kann Ausgaben nicht vor dem nächsten Schritt prüfen | JSON als Text (wie Ausgaben abgegeben werden, G01, ist im Entwurf geregelt: `$AWP_OUTPUTS` und `complete_step`) |
 | Kein Zustand über Läufe (G03) | Gedächtnis ist für AWP unsichtbar: keine Datenklasse, keine Aufbewahrung | Volume aus der Binding |
 | Keine bedingten Schritte (G04) | Der teure Kurator läuft auch, wenn nichts Neues da ist | keiner, kostet etwa 1,50 USD im Monat |
-| Ereignisdaten im Lauf (G41) | Der Router muss Ereignisfelder auf Inputs abbilden | Zuordnung im Sensor |
+| Ereignisdaten im Lauf (G41), Filter-Semantik (G42) | Der Router bildet Ereignisfelder auf Inputs ab; der Filter hat keine festgelegte Bedeutung | Zuordnung im Sensor; Zielform AEP-0004 |
 | Gesprächsverlauf (G46) | Rückfragen verlieren den Zusammenhang | Brücke hängt den Thread ans Ereignis |
 | Seiteneffekte von Kommandos (G06) | Eine Nachricht nach außen ist für Governance nur `shell.execute` | keiner |
-| Netzwerkwunsch gegen Plattformgrenze (G47) | Unklar, ob `permissions.network` Pflicht oder Hinweis ist | Allowlist im Egress-Proxy von Hand |
+| Netzwerkwunsch gegen Plattformgrenze (G47), Syntax von `allowHosts` | ohne `network`-Block gilt `egress: allow`; Plattformgrenzen kommen in AWP nicht vor; keine Schreibweise für Subdomains | `network` in jedem Manifest ausdrücklich setzen; Allowlist im Egress-Proxy von Hand |
 
 Die vollständige Liste und der Stand jeder Lücke stehen im [Abgleich mit AWP](awp-abgleich.md).

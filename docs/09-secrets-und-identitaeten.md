@@ -23,7 +23,7 @@ flowchart LR
 
 | Geheimnis | Liegt in | Sieht es | Sieht es nicht |
 | --- | --- | --- | --- |
-| Modell-Schlüssel | Secret, von der Binding referenziert | nur der Operator (Modell-Proxy) | jeder Schritt-Pod |
+| Modell-Schlüssel | im PoC: Secret im Namespace jedes Agenten, von der Binding referenziert; geplant: nur im Namespace des Operators | der Operator (Modell-Proxy) | Schritt-Pods, solange keine Binding das Secret einem Kommando-Schritt zuordnet (heute nur Konvention) |
 | Bot-Token, Webhook-URL, Formular-Zugang | Secret im Namespace des Agenten | Kommando-Schritte mit passendem `scope` | Agenten-Schritte, andere Agenten |
 | Ticket | Secret pro Versuch, vom Operator erzeugt | genau dieser Schritt-Versuch | alle anderen |
 | Broker-Zugang | Secret der Brücke und des Routers | Brücke (schreiben), Argo Events (lesen) | Agenten |
@@ -33,7 +33,7 @@ Grundsatz: **Das Modell bekommt nie ein Geheimnis.** Ein Agenten-Schritt formuli
 
 ## Deklaration und Zuordnung
 
-Das Manifest deklariert, welche Secrets es gibt und welche Schrittart sie bekommt:
+Das Manifest deklariert, welche Secrets es gibt und wer sie bekommt. `scope` nennt Verbraucher: `command` für Kommando-Schritte, eine Agenten-ID oder einen MCP-Server:
 
 ```yaml
 secrets:
@@ -65,6 +65,6 @@ Secrets stehen nie im Agenten-Repository. Im PoC werden sie von Hand angelegt; f
 | Schritt-Versuch | Ticket | Auftrag holen, Proxy nutzen, Ausgaben abgeben |
 | Agent nach außen | eigenes Bot-Konto | sichtbar, wer antwortet |
 
-Der Mensch ist nicht direkt authentifiziert, sondern von der Brücke bezeugt: Authentifiziert ist die Brücke (am Chat und am Broker), sie bestätigt "diese Nachricht kam von alice". Ein Lauf sollte beides festhalten, wer ihn ausgelöst hat und wer das bezeugt (G44).
+Der Mensch ist nicht direkt authentifiziert, sondern von der Brücke bezeugt: Authentifiziert ist die Brücke (am Chat und am Broker), sie bestätigt "diese Nachricht kam von alice". Nach dem AWP-Entwurf haben Läufe aus Ereignissen den Akteur `system`, und ein von außen angelegter Lauf hat den Akteur, der ihn angelegt hat (hier der ServiceAccount des Sensors). Der bezeugte Mensch hat dort noch keinen Platz; bis das geklärt ist (G44), steht er nur in den Daten des Laufs.
 
-Der ServiceAccount eines Sensors darf nur `WorkflowRun` in genau einem Namespace anlegen. Ein manipulierter Sensor könnte also höchstens Läufe eines Agenten starten, die der Operator ohnehin gegen das Manifest prüft.
+Der ServiceAccount eines Sensors darf nur `WorkflowRun` in genau einem Namespace anlegen. Ein manipulierter Sensor kann aber Läufe dieses Agenten mit beliebigen Eingaben und beliebigem Auslöser-Typ anlegen; begrenzt wird das erst mit der geplanten Admission-Regel ([Kapitel 04](04-laufzeit.md#lebenslauf-eines-laufs)). Weil alle Sensoren im gemeinsamen Namespace `agent-events` liegen und ihre ServiceAccounts nach dem Workflow heißen, kollidieren gleichnamige Workflows zweier Agenten; der Name bekommt deshalb den Agenten als Präfix (offen).

@@ -54,9 +54,62 @@ Ein Modellwechsel ist keine Kleinigkeit: Anweisungen, Kosten und Verhalten ände
 
 ## Einen Agenten abschalten
 
-| Wie | Wirkung |
+Wichtig: Argo CD heilt selbst. Jede Änderung von Hand im Cluster (Policy ändern, Binding löschen) ist in Sekunden zurückgesetzt.
+
+| Wie | Wirkung | Stand |
+| --- | --- | --- |
+| `suspend: true` in den Werten | nur Zeitpläne pausieren; Ereignis- und manuelle Läufe gehen weiter | umgesetzt |
+| Sensor abschalten (`events.enabled: false`) | keine Ereignis-Läufe mehr | umgesetzt |
+| Verzeichnis entfernen | Agent samt Namespace, Zustand und Secrets weg | umgesetzt |
+| Notfall | Auto-Sync der Application abschalten, dann Binding löschen oder Policy ändern; danach den Zustand per Pull Request herstellen | umgesetzt (Argo CD) |
+| Pause im Operator | eine Markierung an Binding oder Namespace, die neue Läufe aller Art ablehnt und laufende abbricht, ohne Git | geplant |
+
+## Ausfälle
+
+```mermaid
+flowchart LR
+    MM[Chat] --> B[Brücke] --> Q[(Broker)] --> ES[EventSource] --> EB[(EventBus)] --> S[Sensor] --> O[Operator]
+    O --> P[Schritt-Pods]
+    P --> O
+```
+
+| Fällt aus | Wirkung | Wiederanlauf |
+| --- | --- | --- |
+| Chat | keine Ereignisse, keine Zustellung; Zustell-Schritte scheitern | Läufe neu starten |
+| Brücke | Nachrichten in dieser Zeit gehen verloren (kein Nachholen) | Neustart; Nachholen über die Chat-API ist offen |
+| Broker | wie Brücke; die Brücke puffert nicht | Neustart, Zustand des Brokers auf Volume |
+| EventSource | Nachrichten gehen verloren (QoS 0) | Neustart |
+| EventBus | Ereignisse zwischen EventSource und Sensor gehen verloren; mit einer Replika ist er ein Einzelpunkt | drei Replikas im Agenten-Cluster |
+| Operator | Er ist Steuerung und Datenweg zugleich: Runner-API, Modell- und Tool-Proxy hängen an ihm. Laufende Schritte scheitern bei ihrem nächsten Aufruf; Zeitpläne holen verpasste Termine innerhalb von `startingDeadline` nach | Neustart; Hochverfügbarkeit (mehrere Replikas, Wahl eines Leiters, Proxy in allen Replikas) offen |
+| Modell-Anbieter | Agenten-Schritte scheitern | Backoff geplant ([Kapitel 10](10-modelle-und-kosten.md#ratenlimits-und-ausfälle-des-anbieters)) |
+
+Teilfehler im Lauf: Scheitert ein Zustell-Schritt (zum Beispiel Telegram), läuft der Schritt `remember` nicht, und am nächsten Tag wird alles erneut gemeldet, auch in die Kanäle, die geklappt haben. Ohne Schritte nach Fehlschlag (G13) hilft nur, Zustellung und Merken so zu schneiden, dass jeder Kanal seinen eigenen Stand merkt.
+
+## Upgrade der Laufzeit
+
+| Teil | Was zu beachten ist |
 | --- | --- |
-| `suspend: true` in den Werten | Zeitpläne pausieren; manuelle und Ereignis-Läufe gehen weiter |
-| Sensor abschalten (`events.enabled: false`) | keine Ereignis-Läufe mehr |
-| Verzeichnis entfernen | Agent samt Namespace, Zustand und Secrets weg |
-| Notfall | Namespace-Policy auf `none`, oder Binding löschen |
+| Operator mit laufenden Läufen | Läufe sind auf ihr Manifest festgehalten; ein neuer Operator übernimmt sie. Tickets sind signiert; sie überleben einen Neustart nur, wenn der Signaturschlüssel fest konfiguriert ist (`AGENTABLE_TICKET_KEY`), sonst scheitern laufende Schritte. Sicherer Weg: Zeitpläne pausieren, laufende Läufe auslaufen lassen, dann aktualisieren |
+| CRDs der Laufzeit (`v1alpha1`) | Helm aktualisiert CRDs nicht; sie werden getrennt angewendet. Bei Änderungen am Schema: Konvertierung oder Neuanlage der Bindings aus Git |
+| AWP-Version (`v1alpha2` auf die nächste) | Manifeste im Repository auf einmal umstellen; der Operator muss beide Versionen eine Zeit lang lesen können |
+
+## Mandanten und Rechte
+
+Im PoC gibt es einen Betreiber und einen Benutzer. Mit mehreren Teams (offen):
+
+- **Argo CD AppProject pro Team** mit den Namespaces seiner Agenten; CODEOWNERS pro Agenten-Verzeichnis und für die Plattform-Schlüssel der Werte.
+- **Budgets pro Team**, Modell-Schlüssel oder Arbeitsbereich pro Team.
+- **Wer darf Läufe anlegen:** RBAC für `WorkflowRun` pro Namespace; heute darf das jeder mit Schreibrecht im Namespace.
+- **Personen statt Namen im Filter:** Erlaubte Benutzer stehen heute einzeln in jedem Agenten. Wer das Team verlässt, muss aus allen Agenten entfernt werden. Besser: Filter auf eine Gruppe im Chat, die die Brücke ins Ereignis schreibt.
+
+## Datenschutz und Protokolle
+
+| Daten | Wohin | Frage |
+| --- | --- | --- |
+| Chat-Nachrichten und Thread-Verlauf aller Teilnehmer | an den Modell-Anbieter; als Eingaben im `WorkflowRun`, also in etcd | Auftragsverarbeitung mit dem Anbieter, Region, Aufbewahrung beim Anbieter; `history.keep` als Löschfrist |
+| Webseiteninhalte | an den Modell-Anbieter | unkritisch, wenn öffentlich |
+| Profile, Vorlieben im Zustand | an den Modell-Anbieter | Zweck, Löschung |
+| Zugriffsprotokolle des Squids (Ziele) | Pod-Logs | Aufbewahrungsfrist |
+| Audit-Ereignisse | Pod-Logs, später zentrale Protokollierung | Aufbewahrungsfrist |
+
+`classification` im Manifest beschreibt die Vertraulichkeit der Daten eines Workflows. Geplant ist, dass die Laufzeit sie gegen den Anbieter prüft (zum Beispiel: `confidential` nur an Anbieter mit Auftragsverarbeitung). Wohin Pod-Logs gehen und wie lange sie bleiben, legt der Betreiber fest (O08).
