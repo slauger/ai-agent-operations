@@ -3,7 +3,7 @@
 ## Das Gesamtbild
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph Git["Git"]
         AR[(Agenten-Repository<br>ein Verzeichnis pro Agent)]
     end
